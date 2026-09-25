@@ -13,33 +13,61 @@ const tinyPng = Buffer.from(
   'base64',
 )
 
-test('总览支持导入本地壁纸、调整不透明度并在刷新后保留', async () => {
+async function waitForServer() {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    try { if ((await fetch(origin)).ok) return } catch { await new Promise(resolve => setTimeout(resolve, 75)) }
+  }
+  throw new Error('本地服务未启动')
+}
+
+async function wallpaperState(page) {
+  return page.locator('.app-shell').evaluate(element => {
+    const styles = getComputedStyle(element, '::before')
+    return { backgroundImage: styles.backgroundImage, opacity: styles.opacity }
+  })
+}
+
+test('壁纸通过导航右侧弹窗设置，并覆盖导航栏和所有模块页面', async () => {
   const profile = await mkdtemp(path.join(tmpdir(), 'rhythm-stage12-'))
   const server = spawn(process.execPath, ['launcher/serve.cjs', '--no-open'], { cwd: process.cwd() })
   let context
   try {
-    for (let attempt = 0; attempt < 40; attempt++) {
-      try { if ((await fetch(origin)).ok) break } catch { await new Promise(resolve => setTimeout(resolve, 75)) }
-    }
+    await waitForServer()
     context = await chromium.launchPersistentContext(profile, { executablePath: chrome, headless: true })
     const page = context.pages()[0] || await context.newPage()
     await page.goto(origin)
-    await page.locator('#overview-wallpaper-file').setInputFiles({
+    assert.equal(await page.getByRole('button', { name: '设置壁纸' }).count(), 1)
+    assert.equal(await page.getByText('总览壁纸', { exact: true }).count(), 0)
+    await page.getByRole('button', { name: '设置壁纸' }).click()
+    await page.getByRole('dialog', { name: '设置壁纸' }).waitFor()
+    await page.locator('#wallpaper-file').setInputFiles({
       name: 'wallpaper.png', mimeType: 'image/png', buffer: tinyPng,
     })
-    await page.getByText('壁纸已保存到本机').waitFor()
+    await page.getByRole('status').getByText('壁纸已保存到本机').waitFor()
     await page.getByLabel(/不透明度/).fill('65')
-    await page.getByText('壁纸不透明度已保存：65%').waitFor()
-    assert.equal(await page.locator('.overview-page').evaluate(element => getComputedStyle(element, '::before').backgroundImage.includes('data:image/png')), true)
-    assert.equal(await page.locator('.overview-page').evaluate(element => getComputedStyle(element, '::before').opacity), '0.65')
+    await page.getByRole('status').getByText('壁纸不透明度已保存：65%').waitFor()
+    const imported = await wallpaperState(page)
+    assert.match(imported.backgroundImage, /data:image\/png/)
+    assert.equal(imported.opacity, '0.65')
+    await page.getByRole('button', { name: '完成' }).click()
+    const topbarBackground = await page.locator('.topbar').evaluate(element => getComputedStyle(element).backgroundColor)
+    assert.match(topbarBackground, /rgba\(/)
+
+    for (const title of ['备忘录', '今日计划', '饮食计划', '游戏娱乐', '羽毛球', '金币与风格', '数据与设置']) {
+      await page.getByRole('navigation').getByRole('button', { name: title }).click()
+      await page.getByRole('heading', { name: title }).waitFor()
+      const state = await wallpaperState(page)
+      assert.match(state.backgroundImage, /data:image\/png/, `${title} 页面应显示同一张壁纸`)
+      assert.equal(state.opacity, '0.65')
+    }
+
     await page.reload()
-    await page.getByText('已使用本地壁纸').waitFor()
+    await page.getByRole('button', { name: '设置壁纸' }).click()
+    await page.getByRole('dialog', { name: '设置壁纸' }).waitFor()
     assert.equal(await page.getByLabel(/不透明度/).inputValue(), '65')
-    assert.equal(await page.locator('.overview-page').evaluate(element => getComputedStyle(element, '::before').opacity), '0.65')
     await page.getByRole('button', { name: '清除壁纸' }).click()
-    await page.getByText('壁纸已清除').waitFor()
-    assert.equal(await page.getByText('已使用本地壁纸').count(), 0)
-    assert.equal(await page.locator('.overview-page').evaluate(element => getComputedStyle(element, '::before').backgroundImage), 'none')
+    await page.getByRole('status').getByText('壁纸已清除').waitFor()
+    assert.equal((await wallpaperState(page)).backgroundImage, 'none')
   } finally {
     await context?.close()
     server.kill()

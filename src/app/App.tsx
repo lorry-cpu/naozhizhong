@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { byId, setting, saveSetting, storageHealth, watchChanges } from '../db/database'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { byId, remove, setting, saveSetting, storageHealth, watchChanges } from '../db/database'
 import { nextMidnight, localDateKey, type ThemeId } from '../domain/rules'
 import { TasksPage } from '../pages/TasksPage'
 import { CoinsPage } from '../pages/CoinsPage'
@@ -10,6 +10,7 @@ import { BadmintonPage } from '../pages/BadmintonPage'
 import { HomePage } from '../pages/HomePage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { MemoPage } from '../pages/MemoPage'
+import { WallpaperDialog } from '../components/WallpaperDialog'
 
 export const pages = [
   { id: 'home', title: '首页总览', icon: '⌂' },
@@ -25,6 +26,15 @@ export const pages = [
 export type PageId = typeof pages[number]['id']
 const navigationPages = pages.filter(item => item.id !== 'home')
 
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('无法读取图片文件'))
+    reader.onerror = () => reject(reader.error || new Error('无法读取图片文件'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export function App() {
   const [page, setPage] = useState<PageId>('home')
   const [memo, setMemo] = useState('')
@@ -34,6 +44,11 @@ export function App() {
   const [health, setHealth] = useState('正在检查本地存储…')
   const [coins, setCoins] = useState(0)
   const [unlocked, setUnlocked] = useState<ThemeId[]>(['warm'])
+  const [wallpaper, setWallpaper] = useState<string | null>(null)
+  const [wallpaperOpacity, setWallpaperOpacity] = useState(0.35)
+  const [wallpaperOpen, setWallpaperOpen] = useState(false)
+  const [wallpaperMessage, setWallpaperMessage] = useState('')
+
   useEffect(() => {
     const memoKey = `memo:${localDateKey(new Date())}`
     let active = true
@@ -61,6 +76,20 @@ export function App() {
         if (active) setHealth(`本地存储不可用：${String(error)}`)
       })
     return () => { active = false }
+  }, [])
+  useEffect(() => {
+    const loadWallpaper = () => {
+      void Promise.all([setting('overviewWallpaper'), setting('overviewWallpaperOpacity')])
+        .then(([savedWallpaper, savedOpacity]) => {
+          setWallpaper(typeof savedWallpaper === 'string' && savedWallpaper ? savedWallpaper : null)
+          if (typeof savedOpacity === 'number' && Number.isFinite(savedOpacity)) {
+            setWallpaperOpacity(Math.min(1, Math.max(0, savedOpacity)))
+          }
+        })
+        .catch(error => setWallpaperMessage(`读取壁纸设置失败：${String(error)}`))
+    }
+    loadWallpaper()
+    return watchChanges(loadWallpaper)
   }, [])
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
   useEffect(() => {
@@ -113,8 +142,45 @@ export function App() {
     try { await saveSetting('theme', next); setTheme(next); setMessage('风格已保存') }
     catch (error) { setMessage(`风格保存失败：${String(error)}`) }
   }
+  async function importWallpaper(file: File) {
+    if (!file.type.startsWith('image/')) {
+      setWallpaperMessage('请选择图片文件')
+      return
+    }
+    try {
+      const dataUrl = await readAsDataUrl(file)
+      await saveSetting('overviewWallpaper', dataUrl)
+      setWallpaper(dataUrl)
+      setWallpaperMessage('壁纸已保存到本机')
+    } catch (error) {
+      setWallpaperMessage(`壁纸保存失败：${String(error)}`)
+    }
+  }
+  async function updateWallpaperOpacity(value: number) {
+    const next = Math.min(1, Math.max(0, value))
+    setWallpaperOpacity(next)
+    try {
+      await saveSetting('overviewWallpaperOpacity', next)
+      setWallpaperMessage(`壁纸不透明度已保存：${Math.round(next * 100)}%`)
+    } catch (error) {
+      setWallpaperMessage(`不透明度保存失败：${String(error)}`)
+    }
+  }
+  async function clearWallpaper() {
+    try {
+      await remove('settings', 'overviewWallpaper')
+      setWallpaper(null)
+      setWallpaperMessage('壁纸已清除')
+    } catch (error) {
+      setWallpaperMessage(`壁纸清除失败：${String(error)}`)
+    }
+  }
+  const appStyle = {
+    '--app-wallpaper': wallpaper ? `url("${wallpaper}")` : 'none',
+    '--app-wallpaper-opacity': String(wallpaperOpacity),
+  } as CSSProperties
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={appStyle}>
       <header className="topbar">
         <button className="brand" type="button" aria-label="闹之钟，返回首页总览" title="返回首页总览" onClick={() => setPage('home')}>
           <span className="brand-icon" aria-hidden="true">⏱</span><span>闹之钟</span>
@@ -128,9 +194,14 @@ export function App() {
             </button>
           ))}
         </nav>
-        <button className="top-balance" type="button" aria-label={`余额 ${coins}￥`} title="余额" onClick={() => setPage('coins')}>
-          <span className="coin-icon" aria-hidden="true">◎</span><span>{coins}￥</span>
-        </button>
+        <div className="top-actions">
+          <button className="wallpaper-button" type="button" aria-label="设置壁纸" title="设置壁纸" onClick={() => { setWallpaperMessage(''); setWallpaperOpen(true) }}>
+            <span aria-hidden="true">▧</span>
+          </button>
+          <button className="top-balance" type="button" aria-label={`余额 ${coins}￥`} title="余额" onClick={() => setPage('coins')}>
+            <span className="coin-icon" aria-hidden="true">◎</span><span>{coins}￥</span>
+          </button>
+        </div>
       </header>
       <main className="content" id="main-content">
         {page === 'home' ? <HomePage memo={memo} onMemo={updateMemo} onSave={() => void persistMemo()} navigate={setPage} />
@@ -140,6 +211,11 @@ export function App() {
           : page === 'food' ? <FoodPage /> : page === 'fun' ? <FunPage /> : page === 'badminton' ? <BadmintonPage /> : null}
         {message && <p role="status" className="feedback">{message}</p>}
       </main>
+      <WallpaperDialog open={wallpaperOpen} wallpaper={wallpaper} opacity={wallpaperOpacity}
+        message={wallpaperMessage} onClose={() => setWallpaperOpen(false)}
+        onImport={file => void importWallpaper(file)}
+        onOpacityChange={value => void updateWallpaperOpacity(value)}
+        onClear={() => void clearWallpaper()} />
     </div>
   )
 }
