@@ -6,7 +6,7 @@ import { chromium } from 'playwright'
 const chrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
 const origin = 'http://127.0.0.1:8765'
 
-test('首页不重复显示金币余额，余额只在左侧栏顶部显示', async () => {
+test('首页不重复显示金币余额，余额只在右上角显示图标、数量和￥', async () => {
   const server = spawn(process.execPath, ['launcher/serve.cjs', '--no-open'], { cwd: process.cwd() })
   let browser
   try {
@@ -17,9 +17,11 @@ test('首页不重复显示金币余额，余额只在左侧栏顶部显示', as
     const page = await browser.newPage()
     await page.goto(origin)
     assert.equal(await page.getByRole('heading', { name: '金币余额' }).count(), 0)
-    assert.equal(await page.getByRole('button', { name: /金币$/ }).count(), 1)
+    assert.equal(await page.getByRole('navigation').getByRole('button', { name: '首页总览' }).count(), 0)
+    assert.equal(await page.getByRole('button', { name: /￥$/ }).count(), 1)
     assert.equal(await page.locator('.top-balance').count(), 1)
     assert.equal(await page.locator('.topbar .top-balance').count(), 1)
+    assert.doesNotMatch(await page.locator('.top-balance').innerText(), /金币/)
   } finally {
     await browser?.close()
     server.kill()

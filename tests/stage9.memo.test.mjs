@@ -9,7 +9,7 @@ import { chromium } from 'playwright'
 const chrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
 const origin = 'http://127.0.0.1:8765'
 
-test('备忘录进入左侧导航并按日期保存、查看每天记录', async () => {
+test('备忘录进入顶部图标导航并按日期保存、查看每天记录', async () => {
   const profile = await mkdtemp(path.join(tmpdir(), 'rhythm-stage9-'))
   const server = spawn(process.execPath, ['launcher/serve.cjs', '--no-open'], { cwd: process.cwd() })
   let context
@@ -35,7 +35,7 @@ test('备忘录进入左侧导航并按日期保存、查看每天记录', async
     await page.getByRole('button', { name: /2026-09-23/ }).click()
     await page.waitForFunction(() => document.querySelector('#memo-editor')?.value === '周三完成复盘')
     assert.equal(await page.locator('#memo-editor').inputValue(), '周三完成复盘')
-    await page.getByRole('navigation').getByRole('button', { name: '首页总览' }).click()
+    await page.getByRole('button', { name: '闹之钟，返回首页总览' }).click()
     assert.equal(await page.locator('h2').filter({ hasText: '备忘录' }).count(), 1)
   } finally {
     await context?.close()

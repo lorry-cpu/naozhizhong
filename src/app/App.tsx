@@ -23,6 +23,7 @@ export const pages = [
 ] as const
 
 export type PageId = typeof pages[number]['id']
+const navigationPages = pages.filter(item => item.id !== 'home')
 
 export function App() {
   const [page, setPage] = useState<PageId>('home')
@@ -112,33 +113,33 @@ export function App() {
     try { await saveSetting('theme', next); setTheme(next); setMessage('风格已保存') }
     catch (error) { setMessage(`风格保存失败：${String(error)}`) }
   }
-  const current = pages.find(item => item.id === page)!
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand"><span className="brand-icon" aria-hidden="true">⏰</span><span>闹之钟</span></div>
-        <div className="nav-label">今天与日常</div>
+      <header className="topbar">
+        <button className="brand" type="button" aria-label="闹之钟，返回首页总览" title="返回首页总览" onClick={() => setPage('home')}>
+          <span className="brand-icon" aria-hidden="true">⏱</span><span>闹之钟</span>
+        </button>
         <nav aria-label="应用导航">
-          {pages.map(item => (
+          {navigationPages.map(item => (
             <button key={item.id} type="button" className={`nav-item ${page === item.id ? 'active' : ''}`}
-              onClick={() => setPage(item.id)} aria-current={page === item.id ? 'page' : undefined}>
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>{item.title}
+              onClick={() => setPage(item.id)} aria-label={item.title} title={item.title}
+              aria-current={page === item.id ? 'page' : undefined}>
+              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
             </button>
           ))}
         </nav>
-        <div className="sidebar-note">只在这台电脑使用<br />数据保存在本机</div>
-      </aside>
-      <div className="workspace">
-        <header className="topbar"><div><strong>{current.title}</strong><small>按自己的节奏安排每一天</small></div><button className="top-balance" type="button" onClick={() => setPage('coins')}>● {coins} 金币</button></header>
-        <main className="content" id="main-content">
-          {page === 'home' ? <HomePage memo={memo} onMemo={updateMemo} onSave={() => void persistMemo()} navigate={setPage} />
-            : page === 'memo' ? <MemoPage />
-            : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)} />
-            : page === 'tasks' ? <TasksPage /> : page === 'coins' ? <CoinsPage current={theme} onTheme={setTheme} />
-            : page === 'food' ? <FoodPage /> : page === 'fun' ? <FunPage /> : page === 'badminton' ? <BadmintonPage /> : null}
-          {message && <p role="status" className="feedback">{message}</p>}
-        </main>
-      </div>
+        <button className="top-balance" type="button" aria-label={`余额 ${coins}￥`} title="余额" onClick={() => setPage('coins')}>
+          <span className="coin-icon" aria-hidden="true">◎</span><span>{coins}￥</span>
+        </button>
+      </header>
+      <main className="content" id="main-content">
+        {page === 'home' ? <HomePage memo={memo} onMemo={updateMemo} onSave={() => void persistMemo()} navigate={setPage} />
+          : page === 'memo' ? <MemoPage />
+          : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)} />
+          : page === 'tasks' ? <TasksPage /> : page === 'coins' ? <CoinsPage current={theme} onTheme={setTheme} />
+          : page === 'food' ? <FoodPage /> : page === 'fun' ? <FunPage /> : page === 'badminton' ? <BadmintonPage /> : null}
+        {message && <p role="status" className="feedback">{message}</p>}
+      </main>
     </div>
   )
 }
