@@ -31,6 +31,7 @@ const server = http.createServer((req, res) => {
   const finalPath = pathname === '/' ? path.join(publicDir, 'index.html') : filePath
   fs.stat(finalPath, (statError, stat) => {
     if (statError || !stat.isFile()) { res.writeHead(404).end('Not found'); return }
+    res.setHeader('X-Naozhizhong-App', '1')
     res.setHeader('Content-Type', mime[path.extname(finalPath)] || 'application/octet-stream')
     res.setHeader('Cache-Control', 'no-cache')
     if (req.method === 'HEAD') { res.writeHead(200).end(); return }
@@ -39,9 +40,26 @@ const server = http.createServer((req, res) => {
 })
 
 server.on('error', error => {
-  if (error.code === 'EADDRINUSE') console.error(`端口 ${port} 已被占用；请关闭旧的应用窗口对应的服务后重试。`)
-  else console.error(error)
-  process.exitCode = 1
+  if (error.code !== 'EADDRINUSE') {
+    console.error(error)
+    process.exitCode = 1
+    return
+  }
+
+  const url = `http://${host}:${port}/`
+  http.get(url, response => {
+    response.resume()
+    if (response.statusCode === 200 && response.headers['x-naozhizhong-app'] === '1') {
+      console.log(`闹之钟已在运行：${url}`)
+      if (!process.argv.includes('--no-open') && process.platform === 'win32') openBrowser(url)
+      return
+    }
+    console.error(`端口 ${port} 已被其他服务占用，无法启动闹之钟。`)
+    process.exitCode = 1
+  }).on('error', probeError => {
+    console.error(`端口 ${port} 已被占用，且无法确认现有服务：${probeError.message}`)
+    process.exitCode = 1
+  })
 })
 server.listen(port, host, () => {
   const url = `http://${host}:${port}/`
