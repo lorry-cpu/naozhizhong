@@ -62,6 +62,9 @@ h2 { font-size: 18px; margin: 0 0 14px; }
 .summary-card { background: var(--app-soft); padding: 18px; border-radius: 12px; }
 .history-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--app-border); }
 .history-row span { overflow-wrap: anywhere; }
+.memo-record { display: grid; grid-template-columns: 120px minmax(0, 1fr); width: 100%; text-align: left; gap: 14px; border: 0; border-top: 1px solid var(--app-border); background: transparent; color: var(--app-ink); padding: 13px 0; }
+.memo-record span { overflow-wrap: anywhere; }
+.memo-record.active { color: var(--app-primary); }
 button:disabled { cursor: default; opacity: .65; }
 :root[data-theme="focus"] .button-primary { color: #182920; }
 @media (max-width: 700px) {

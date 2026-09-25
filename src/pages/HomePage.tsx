@@ -37,9 +37,10 @@ export function HomePage({ memo, onMemo, onSave, navigate }: {
         <p>{todaysTasks.find(row => row.status === 'pending')?.title ?? '当前没有待打卡任务'}</p>
         <button className="button-link" onClick={() => navigate('tasks')}>查看或新建任务 →</button></section>
     </div>
-    <section className="panel"><h2>快速备忘</h2><label htmlFor="quick-memo">随手记下</label>
+    <section className="panel"><h2>备忘录</h2><label htmlFor="quick-memo">记录今天想到的事情</label>
       <textarea id="quick-memo" value={memo} onChange={e => onMemo(e.target.value)} placeholder="比如：买球、补牛奶…" />
-      <button className="button-primary" onClick={onSave}>保存备忘</button></section>
+      <div className="button-row"><button className="button-primary" onClick={onSave}>保存备忘</button>
+        <button className="button-link" onClick={() => navigate('memo')}>查看每天记录 →</button></div></section>
     <div className="card-grid">
       <section className="panel"><h2>今日饮食</h2>
         <p>{todaysMeals.length ? todaysMeals.map(row => `${row.time} ${row.kind}：${row.food}`).join('；') : '今天还没有餐次安排'}</p>

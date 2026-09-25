@@ -9,9 +9,11 @@ import { FunPage } from '../pages/FunPage'
 import { BadmintonPage } from '../pages/BadmintonPage'
 import { HomePage } from '../pages/HomePage'
 import { SettingsPage } from '../pages/SettingsPage'
+import { MemoPage } from '../pages/MemoPage'
 
 export const pages = [
   { id: 'home', title: '首页总览', icon: '⌂' },
+  { id: 'memo', title: '备忘录', icon: '✎' },
   { id: 'tasks', title: '今日计划', icon: '✓' },
   { id: 'food', title: '饮食计划', icon: '♧' },
   { id: 'fun', title: '游戏娱乐', icon: '◈' },
@@ -31,9 +33,10 @@ export function App() {
   const [coins, setCoins] = useState(0)
   const [unlocked, setUnlocked] = useState<ThemeId[]>(['warm'])
   useEffect(() => {
-    Promise.all([setting('memo'), setting('theme'), storageHealth()])
-      .then(([savedMemo, savedTheme, status]) => {
-        setMemo(typeof savedMemo === 'string' ? savedMemo : '')
+    const memoKey = `memo:${localDateKey(new Date())}`
+    Promise.all([setting(memoKey), setting('memo'), setting('theme'), storageHealth()])
+      .then(([savedDailyMemo, savedMemo, savedTheme, status]) => {
+        setMemo(typeof savedDailyMemo === 'string' ? savedDailyMemo : typeof savedMemo === 'string' ? savedMemo : '')
         if (savedTheme === 'cool' || savedTheme === 'focus') setTheme(savedTheme)
         setHealth(status.writable ? (status.persistent ? '本地存储可用 · 已获得持久存储权限' : '本地存储可用 · 请定期导出备份') : `本地存储不可用：${status.error}`)
       }).catch(error => setHealth(`本地存储不可用：${String(error)}`))
@@ -72,7 +75,12 @@ export function App() {
     }
   }, [])
   async function persistMemo() {
-    try { await saveSetting('memo', memo); setMessage('备忘已保存到本机') }
+    try {
+      const date = localDateKey(new Date())
+      await saveSetting(`memo:${date}`, memo)
+      await saveSetting('memo', memo)
+      setMessage('备忘已保存到本机')
+    }
     catch (error) { setMessage(`备忘保存失败：${String(error)}`) }
   }
   async function changeTheme(next: ThemeId) {
@@ -100,6 +108,7 @@ export function App() {
         <header className="topbar"><div><strong>{current.title}</strong><small>按自己的节奏安排每一天</small></div><button className="top-balance" type="button" onClick={() => setPage('coins')}>● {coins} 金币</button></header>
         <main className="content" id="main-content">
           {page === 'home' ? <HomePage memo={memo} onMemo={setMemo} onSave={() => void persistMemo()} navigate={setPage} />
+            : page === 'memo' ? <MemoPage />
             : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)} />
             : page === 'tasks' ? <TasksPage /> : page === 'coins' ? <CoinsPage current={theme} onTheme={setTheme} />
             : page === 'food' ? <FoodPage /> : page === 'fun' ? <FunPage /> : page === 'badminton' ? <BadmintonPage /> : null}
