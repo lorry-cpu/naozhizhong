@@ -63,7 +63,7 @@ server.on('error', error => {
 })
 server.listen(port, host, () => {
   const url = `http://${host}:${port}/`
-  console.log(`自己的节奏已启动：${url}`)
+  console.log(`闹之钟已启动：${url}`)
   console.log('请保持此窗口开启；关闭窗口会停止应用。若浏览器没有自动打开，请复制上面的地址到浏览器。')
   if (!process.argv.includes('--no-open') && process.platform === 'win32') {
     openBrowser(url)

@@ -25,7 +25,7 @@ test('双击入口经 Windows 命令解释器启动后能从固定地址读取�
     }
     assert.ok(response, `批处理文件必须启动本地服务。输出：${output}`)
     assert.equal(response.status, 200)
-    assert.match(await response.text(), /自己的节奏/)
+    assert.match(await response.text(), /<title>闹之钟<\/title>/)
     assert.equal(await ended, 0, `批处理文件应正常退出。输出：${output}`)
     assert.match(output, /127\.0\.0\.1:8765/)
   } finally {

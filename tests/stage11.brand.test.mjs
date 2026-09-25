@@ -16,6 +16,7 @@ test('左上角品牌显示为闹之钟', async () => {
     browser = await chromium.launch({ executablePath: chrome, headless: true })
     const page = await browser.newPage()
     await page.goto(origin)
+    assert.equal(await page.title(), '闹之钟')
     assert.equal(await page.locator('.brand').locator('span').nth(1).innerText(), '闹之钟')
     assert.equal(await page.getByText('闹之钟', { exact: true }).count(), 1)
     assert.equal(await page.getByText('自己的节奏', { exact: true }).count(), 0)

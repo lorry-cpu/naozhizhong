@@ -23,7 +23,7 @@ test('固定地址本地服务能读取构建结果，并拒绝其他方法和�
     }
     assert.ok(response, '本地服务必须在固定端口启动')
     assert.equal(response.status, 200)
-    assert.match(await response.text(), /自己的节奏/)
+    assert.match(await response.text(), /<title>闹之钟<\/title>/)
     assert.equal((await fetch(origin, { method: 'POST' })).status, 405)
     assert.equal((await fetch(origin + '/missing-file')).status, 404)
     assert.notEqual((await fetch(origin + '/%2e%2e/%2e%2e/PRD.md')).status, 200)
