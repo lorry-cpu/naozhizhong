@@ -1,0 +1,23 @@
+{
+  "name": "personal-rhythm",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 8765 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --test --test-concurrency=1",
+    "start": "node launcher/serve.cjs --no-open"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright": "^1.63.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1"
+  }
+}
