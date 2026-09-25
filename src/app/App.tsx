@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { byId, setting, saveSetting, storageHealth, watchChanges } from '../db/database'
 import { nextMidnight, localDateKey, type ThemeId } from '../domain/rules'
 import { TasksPage } from '../pages/TasksPage'
@@ -27,6 +27,7 @@ export type PageId = typeof pages[number]['id']
 export function App() {
   const [page, setPage] = useState<PageId>('home')
   const [memo, setMemo] = useState('')
+  const memoEdited = useRef(false)
   const [theme, setTheme] = useState<ThemeId>('warm')
   const [message, setMessage] = useState('')
   const [health, setHealth] = useState('正在检查本地存储…')
@@ -34,12 +35,31 @@ export function App() {
   const [unlocked, setUnlocked] = useState<ThemeId[]>(['warm'])
   useEffect(() => {
     const memoKey = `memo:${localDateKey(new Date())}`
-    Promise.all([setting(memoKey), setting('memo'), setting('theme'), storageHealth()])
-      .then(([savedDailyMemo, savedMemo, savedTheme, status]) => {
-        setMemo(typeof savedDailyMemo === 'string' ? savedDailyMemo : typeof savedMemo === 'string' ? savedMemo : '')
-        if (savedTheme === 'cool' || savedTheme === 'focus') setTheme(savedTheme)
+    let active = true
+    void Promise.all([setting(memoKey), setting('memo')])
+      .then(([savedDailyMemo, savedMemo]) => {
+        if (!active) return
+        if (!memoEdited.current) setMemo(typeof savedDailyMemo === 'string' ? savedDailyMemo : typeof savedMemo === 'string' ? savedMemo : '')
+      })
+      .catch(error => {
+        if (active) setMessage(`读取备忘失败：${String(error)}`)
+      })
+    void setting('theme')
+      .then(savedTheme => {
+        if (active && (savedTheme === 'cool' || savedTheme === 'focus')) setTheme(savedTheme)
+      })
+      .catch(error => {
+        if (active) setMessage(`读取风格失败：${String(error)}`)
+      })
+    void storageHealth()
+      .then(status => {
+        if (!active) return
         setHealth(status.writable ? (status.persistent ? '本地存储可用 · 已获得持久存储权限' : '本地存储可用 · 请定期导出备份') : `本地存储不可用：${status.error}`)
-      }).catch(error => setHealth(`本地存储不可用：${String(error)}`))
+      })
+      .catch(error => {
+        if (active) setHealth(`本地存储不可用：${String(error)}`)
+      })
+    return () => { active = false }
   }, [])
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
   useEffect(() => {
@@ -74,6 +94,10 @@ export function App() {
       document.removeEventListener('visibilitychange', run)
     }
   }, [])
+  function updateMemo(value: string) {
+    memoEdited.current = true
+    setMemo(value)
+  }
   async function persistMemo() {
     try {
       const date = localDateKey(new Date())
@@ -107,7 +131,7 @@ export function App() {
       <div className="workspace">
         <header className="topbar"><div><strong>{current.title}</strong><small>按自己的节奏安排每一天</small></div><button className="top-balance" type="button" onClick={() => setPage('coins')}>● {coins} 金币</button></header>
         <main className="content" id="main-content">
-          {page === 'home' ? <HomePage memo={memo} onMemo={setMemo} onSave={() => void persistMemo()} navigate={setPage} />
+          {page === 'home' ? <HomePage memo={memo} onMemo={updateMemo} onSave={() => void persistMemo()} navigate={setPage} />
             : page === 'memo' ? <MemoPage />
             : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)} />
             : page === 'tasks' ? <TasksPage /> : page === 'coins' ? <CoinsPage current={theme} onTheme={setTheme} />
