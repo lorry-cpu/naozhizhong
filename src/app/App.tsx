@@ -92,7 +92,7 @@ export function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><span className="brand-icon">时</span>自己的节奏</div>
+        <div className="brand"><span className="brand-icon" aria-hidden="true">⏰</span><span>闹之钟</span></div>
         <div className="nav-label">今天与日常</div>
         <nav aria-label="应用导航">
           {pages.map(item => (
