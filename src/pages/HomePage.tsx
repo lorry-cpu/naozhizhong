@@ -5,9 +5,9 @@ import { badmintonMinutes } from '../domain/life'
 import { localDateKey } from '../domain/rules'
 import type { PageId } from '../app/App'
 
-export function HomePage({ memo, onMemo, onSave, navigate, coins }: {
+export function HomePage({ memo, onMemo, onSave, navigate }: {
   memo: string; onMemo: (text: string) => void; onSave: () => void
-  navigate: (page: PageId) => void; coins: number
+  navigate: (page: PageId) => void
 }) {
   const [tasks, setTasks] = useState<TaskInstance[]>([])
   const [meals, setMeals] = useState<Meal[]>([])
@@ -33,7 +33,6 @@ export function HomePage({ memo, onMemo, onSave, navigate, coins }: {
   return <>
     <h1>首页总览</h1><p className="subtitle">{today} · 看看今天的安排。</p>
     <div className="card-grid">
-      <section className="panel summary-card"><h2>金币余额</h2><strong>{coins} 金币</strong><p><button className="button-link" onClick={() => navigate('coins')}>查看明细与风格 →</button></p></section>
       <section className="panel summary-card"><h2>今日计划</h2><strong>{done} / {todaysTasks.length} 项已结算</strong>
         <p>{todaysTasks.find(row => row.status === 'pending')?.title ?? '当前没有待打卡任务'}</p>
         <button className="button-link" onClick={() => navigate('tasks')}>查看或新建任务 →</button></section>

@@ -32,7 +32,6 @@ button { cursor: pointer; }
 .topbar { height: 76px; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--app-panel); border-bottom: 1px solid var(--app-border); padding: 0 34px; }
 .topbar strong { display: block; font-weight: 700; }
 .topbar small, .subtitle { color: var(--app-muted); }
-.top-balance { color: #906827; background: #fff3db; border: 0; border-radius: 20px; padding: 8px 14px; white-space: nowrap; }
 .content { width: min(1120px, 100%); margin: 0 auto; padding: 32px 34px; }
 h1 { font-size: 25px; line-height: 1.4; margin: 0 0 6px; }
 h2 { font-size: 18px; margin: 0 0 14px; }
@@ -75,3 +74,4 @@ button:disabled { cursor: default; opacity: .65; }
   .topbar { padding: 0 16px; }
   .content { padding: 22px 16px; }
 }
+.top-balance { color: #906827; background: #fff3db; border: 0; border-radius: 20px; padding: 8px 14px; white-space: nowrap; }

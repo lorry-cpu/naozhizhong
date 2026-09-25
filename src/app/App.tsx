@@ -99,7 +99,7 @@ export function App() {
       <div className="workspace">
         <header className="topbar"><div><strong>{current.title}</strong><small>按自己的节奏安排每一天</small></div><button className="top-balance" type="button" onClick={() => setPage('coins')}>● {coins} 金币</button></header>
         <main className="content" id="main-content">
-          {page === 'home' ? <HomePage memo={memo} onMemo={setMemo} onSave={() => void persistMemo()} navigate={setPage} coins={coins} />
+          {page === 'home' ? <HomePage memo={memo} onMemo={setMemo} onSave={() => void persistMemo()} navigate={setPage} />
             : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)} />
             : page === 'tasks' ? <TasksPage /> : page === 'coins' ? <CoinsPage current={theme} onTheme={setTheme} />
             : page === 'food' ? <FoodPage /> : page === 'fun' ? <FunPage /> : page === 'badminton' ? <BadmintonPage /> : null}
