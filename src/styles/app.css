@@ -65,6 +65,16 @@ h2 { font-size: 18px; margin: 0 0 14px; }
 .memo-record { display: grid; grid-template-columns: 120px minmax(0, 1fr); width: 100%; text-align: left; gap: 14px; border: 0; border-top: 1px solid var(--app-border); background: transparent; color: var(--app-ink); padding: 13px 0; }
 .memo-record span { overflow-wrap: anywhere; }
 .memo-record.active { color: var(--app-primary); }
+.calendar-panel { padding: 16px; }
+.calendar { width: min(620px, 100%); margin: 0 auto; }
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.calendar-header .button-secondary { min-width: 40px; padding: 7px 10px; }
+.calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.calendar-weekdays { color: var(--app-muted); text-align: center; font-size: 12px; padding-bottom: 5px; }
+.calendar-day { min-height: 52px; border: 1px solid var(--app-border); border-radius: 9px; background: var(--app-panel); color: var(--app-ink); padding: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; }
+.calendar-day:hover, .calendar-day.selected { border-color: var(--app-primary); background: var(--app-soft); }
+.calendar-day.outside { color: var(--app-muted); opacity: .55; }
+.calendar-day small { color: var(--app-primary); font-size: 11px; }
 button:disabled { cursor: default; opacity: .65; }
 :root[data-theme="focus"] .button-primary { color: #182920; }
 @media (max-width: 700px) {

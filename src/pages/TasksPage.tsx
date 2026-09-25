@@ -4,6 +4,7 @@ import type { TaskInstance, TaskTemplate, TimerRecord } from '../db/types'
 import { localDateKey, nextMidnight, payoutFor, rewardCap } from '../domain/rules'
 import { cancelTask, changeRepeat, createTask, elapsedMs, pauseTimer, startTimer, stopRepeating, tasksForDate, updateTask } from '../domain/tasks'
 import { settleTask } from '../domain/coins'
+import { Calendar } from '../components/Calendar'
 
 const today = () => localDateKey(new Date())
 const initialForm = (date: string) => ({
@@ -16,6 +17,7 @@ const difficultyLabels = { easy: '简单', medium: '中等', hard: '困难' }
 export function TasksPage() {
   const [date, setDate] = useState(today())
   const [items, setItems] = useState<TaskInstance[]>([])
+  const [calendarItems, setCalendarItems] = useState<TaskInstance[]>([])
   const [timers, setTimers] = useState<Record<string, TimerRecord>>({})
   const [templates, setTemplates] = useState<Record<string, TaskTemplate>>({})
   const [form, setForm] = useState<Form>(initialForm(today()))
@@ -31,8 +33,9 @@ export function TasksPage() {
   const load = useCallback(async () => {
     try {
       const next = await tasksForDate(date)
-      const [recorded, source] = await Promise.all([all('timers'), all('templates')])
+      const [recorded, source, occurrences] = await Promise.all([all('timers'), all('templates'), all('occurrences')])
       setItems(next)
+      setCalendarItems(occurrences)
       setTimers(Object.fromEntries(recorded.map(timer => [timer.id, timer])))
       setTemplates(Object.fromEntries(source.map(template => [template.id, template])))
     } catch (reason) { setError(String(reason)) }
@@ -78,6 +81,8 @@ export function TasksPage() {
         setForm(initialForm(date < today() ? today() : date)); setEditing(null); setFormOpen(true)
       }}>＋ 新建任务</button>
     </div>
+    <section className="panel calendar-panel"><Calendar value={date} onChange={setDate}
+      entries={calendarItems.filter(item => item.status !== 'cancelled').map(item => ({ date: item.date, count: 1 }))} ariaLabel="计划日历" /></section>
     {formOpen && <section className="panel">
       <h2>{editing ? '修改任务' : '新建计划任务'}</h2>
       <form onSubmit={event => void submit(event)} className="form-grid">

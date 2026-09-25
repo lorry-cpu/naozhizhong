@@ -3,6 +3,7 @@ import { all, remove, save, watchChanges } from '../db/database'
 import type { Meal } from '../db/types'
 import { mondayOf, validateMeal } from '../domain/life'
 import { localDateKey } from '../domain/rules'
+import { Calendar } from '../components/Calendar'
 
 const fresh = (date: string): Meal => ({ id: crypto.randomUUID(), date, kind: '早餐', time: '08:00', food: '', spent: null })
 export function FoodPage() {
@@ -28,7 +29,8 @@ export function FoodPage() {
   }
   return <>
     <h1>饮食计划</h1><p className="subtitle">按餐次安排吃什么、几点吃，并记录实际花费。</p>
-    <div className="toolbar"><label>查看日期 <input aria-label="饮食日期" type="date" value={date} onChange={e => setDate(e.target.value)} /></label></div>
+    <section className="panel calendar-panel"><Calendar value={date} onChange={setDate}
+      entries={rows.map(row => ({ date: row.date, count: 1 }))} ariaLabel="饮食日历" /></section>
     <section className="panel"><h2>{editing ? '修改餐次' : '添加餐次'}</h2>
       <form className="form-grid" onSubmit={e => void submit(e)}>
         <label>用餐日期<input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></label>

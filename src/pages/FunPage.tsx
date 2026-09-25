@@ -3,6 +3,7 @@ import { all, remove, save, watchChanges } from '../db/database'
 import type { Entertainment } from '../db/types'
 import { mondayOf, validateEntertainment } from '../domain/life'
 import { localDateKey } from '../domain/rules'
+import { Calendar } from '../components/Calendar'
 
 const fresh = (date: string): Entertainment => ({
   id: crypto.randomUUID(), date, category: '游戏', title: '',
@@ -35,7 +36,8 @@ export function FunPage() {
   }
   return <>
     <h1>游戏娱乐</h1><p className="subtitle">先安排娱乐时间，再单独记录实际玩了多久。</p>
-    <div className="toolbar"><label>查看日期 <input aria-label="娱乐日期" type="date" value={date} onChange={e => setDate(e.target.value)} /></label></div>
+    <section className="panel calendar-panel"><Calendar value={date} onChange={setDate}
+      entries={rows.map(row => ({ date: row.date, count: 1 }))} ariaLabel="娱乐日历" /></section>
     <section className="panel"><h2>{editing ? '修改娱乐记录' : '安排娱乐'}</h2>
       <form className="form-grid" onSubmit={e => void submit(e)}>
         <label>日期<input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></label>
