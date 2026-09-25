@@ -29,6 +29,10 @@ button { cursor: pointer; }
 .topbar nav .nav-item[title]:hover::after, .topbar nav .nav-item[title]:focus-visible::after { content: attr(title); position: absolute; z-index: 2; top: 52px; left: 50%; transform: translateX(-50%); padding: 5px 9px; border-radius: 5px; background: #252525; color: #fff; font-size: 12px; line-height: 1.2; white-space: nowrap; }
 .topbar small, .subtitle { color: var(--app-muted); }
 .content { width: min(1120px, 100%); margin: 0 auto; padding: 32px 34px; }
+.overview-page { position: relative; isolation: isolate; }
+.overview-page::before { content: ""; position: absolute; z-index: -1; inset: -12px; border-radius: 24px; background-image: var(--overview-wallpaper, none); background-size: cover; background-position: center; opacity: var(--overview-wallpaper-opacity, 0); pointer-events: none; }
+.overview-page.has-wallpaper::before { box-shadow: 0 10px 36px #1e29251c; }
+.overview-page > * { position: relative; }
 h1 { font-size: 25px; line-height: 1.4; margin: 0 0 6px; }
 h2 { font-size: 18px; margin: 0 0 14px; }
 .subtitle { margin: 0 0 22px; }
@@ -36,6 +40,8 @@ h2 { font-size: 18px; margin: 0 0 14px; }
 .panel label { display: block; margin: 12px 0 7px; }
 .panel textarea, .panel input, .panel select { width: 100%; border: 1px solid var(--app-border); background: var(--app-bg); color: var(--app-ink); border-radius: 9px; padding: 10px; min-height: 41px; }
 .panel textarea { min-height: 100px; resize: vertical; display: block; margin-bottom: 12px; }
+.overview-wallpaper-settings input[type="file"] { padding: 7px; }
+.overview-wallpaper-settings input[type="range"] { accent-color: var(--app-primary); padding: 0; min-height: 26px; }
 .button-primary { background: var(--app-primary); color: #fff; border: 0; padding: 9px 16px; border-radius: 9px; }
 .feedback { color: var(--app-primary); }
 .error { color: #b53636; padding: 10px; }
