@@ -7,11 +7,25 @@
   --app-border: #e3e9e4;
   --app-primary: #30785f;
   --app-soft: #eaf4ec;
-  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  --app-font-family: "NaoFangSong", "FangSong", "仿宋", serif;
+  font-family: var(--app-font-family);
   color: var(--app-ink);
   background: var(--app-bg);
   font-synthesis: none;
 }
+@font-face { font-family: "NaoFangSong"; src: url("/fonts/fangsong.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoKaiTi"; src: url("/fonts/kaiti.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoHandbook"; src: url("/fonts/handbook.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoSourceHanSans"; src: url("/fonts/source-han-sans.ttf") format("truetype"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "NaoMinimal"; src: url("/fonts/minimal.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoHandwrite"; src: url("/fonts/handwrite.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoSourceHanSerif"; src: url("/fonts/source-han-serif.ttf") format("truetype"); font-weight: 100 900; font-display: swap; }
+:root[data-font="kaiti"] { --app-font-family: "NaoKaiTi", "KaiTi", "楷体", serif; }
+:root[data-font="handbook"] { --app-font-family: "NaoHandbook", "STXingkai", "华文行楷", cursive; }
+:root[data-font="source-han-sans"] { --app-font-family: "NaoSourceHanSans", "Noto Sans SC", sans-serif; }
+:root[data-font="minimal"] { --app-font-family: "NaoMinimal", "DengXian", "等线", sans-serif; }
+:root[data-font="handwrite"] { --app-font-family: "NaoHandwrite", "STLiti", "华文隶书", serif; }
+:root[data-font="source-han-serif"] { --app-font-family: "NaoSourceHanSerif", "Noto Serif SC", serif; }
 :root[data-theme="cool"] { --app-bg: #f0f4f8; --app-panel: #fff; --app-panel-rgb: 255, 255, 255; --app-ink: #1e3044; --app-muted: #64758a; --app-border: #e0e8f1; --app-primary: #326ca8; --app-soft: #e9f2fc; }
 :root[data-theme="focus"] { --app-bg: #232626; --app-panel: #303535; --app-panel-rgb: 48, 53, 53; --app-ink: #e8edeb; --app-muted: #b2c0ba; --app-border: #48514e; --app-primary: #8bcaac; --app-soft: #36483e; color-scheme: dark; }
 * { box-sizing: border-box; }
@@ -66,6 +80,15 @@ h2 { font-size: 18px; margin: 0 0 14px; }
 .dialog-actions { justify-content: flex-end; margin-top: 18px; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
 .summary-card { background: rgba(var(--app-panel-rgb), .78); padding: 18px; border-radius: 12px; }
+.font-card { min-height: 200px; display: flex; flex-direction: column; align-items: flex-start; }
+.font-card .font-preview { flex: 1; width: 100%; display: flex; align-items: center; margin: 16px 0; font-size: 18px; line-height: 1.6; }
+.font-preview-fangsong .font-preview { font-family: "NaoFangSong", serif; }
+.font-preview-kaiti .font-preview { font-family: "NaoKaiTi", serif; }
+.font-preview-handbook .font-preview { font-family: "NaoHandbook", cursive; }
+.font-preview-source-han-sans .font-preview { font-family: "NaoSourceHanSans", sans-serif; }
+.font-preview-minimal .font-preview { font-family: "NaoMinimal", sans-serif; }
+.font-preview-handwrite .font-preview { font-family: "NaoHandwrite", serif; }
+.font-preview-source-han-serif .font-preview { font-family: "NaoSourceHanSerif", serif; }
 .history-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--app-border); }
 .history-row span { overflow-wrap: anywhere; }
 .memo-record { display: grid; grid-template-columns: 120px minmax(0, 1fr); width: 100%; text-align: left; gap: 14px; border: 0; border-top: 1px solid var(--app-border); background: transparent; color: var(--app-ink); padding: 13px 0; }

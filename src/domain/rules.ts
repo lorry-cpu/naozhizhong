@@ -1,11 +1,22 @@
 export type Difficulty = 'easy' | 'medium' | 'hard'
 export type ThemeId = 'warm' | 'cool' | 'focus'
+export type FontId = 'fangsong' | 'kaiti' | 'handbook' | 'source-han-sans' | 'minimal' | 'handwrite' | 'source-han-serif'
 export type RepeatRule = 'none' | 'daily' | 'weekly'
 
 export const THEMES: ReadonlyArray<{ id: ThemeId; name: string; price: number }> = [
   { id: 'warm', name: '温暖日常', price: 0 },
   { id: 'cool', name: '清爽冷调', price: 90 },
   { id: 'focus', name: '专注简约', price: 160 },
+]
+
+export const FONTS: ReadonlyArray<{ id: FontId; name: string; price: number; preview: string }> = [
+  { id: 'fangsong', name: '仿宋体', price: 0, preview: '清晰端正，适合每天使用。' },
+  { id: 'kaiti', name: '楷体', price: 200, preview: '一笔一画，温和有序。' },
+  { id: 'handbook', name: '手帐风格 · 华文行楷', price: 200, preview: '写下今天的小目标。' },
+  { id: 'source-han-sans', name: '思源黑体', price: 200, preview: '简洁现代，阅读轻松。' },
+  { id: 'minimal', name: '极简风格 · 等线', price: 200, preview: '专注当下，保持节奏。' },
+  { id: 'handwrite', name: '手写体 · 华文隶书', price: 200, preview: '把生活写成自己的样子。' },
+  { id: 'source-han-serif', name: '思源宋体', price: 200, preview: '沉静阅读，慢慢积累。' },
 ]
 
 const difficultyRates: Record<Difficulty, number> = {

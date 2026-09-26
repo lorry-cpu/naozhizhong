@@ -3,11 +3,12 @@ import { all, saveSetting, setting, watchChanges } from '../db/database'
 import { exportBackup, importBackup, parseBackup, type Backup } from '../db/backup'
 import type { Badminton, Entertainment, Meal, TaskInstance, TimerRecord } from '../db/types'
 import { badmintonMinutes } from '../domain/life'
-import { THEMES, type ThemeId } from '../domain/rules'
+import { FONTS, THEMES, type FontId, type ThemeId } from '../domain/rules'
 import { elapsedMs } from '../domain/tasks'
 
-export function SettingsPage({ health, theme, unlocked, onTheme }: {
+export function SettingsPage({ health, theme, unlocked, onTheme, font, unlockedFonts, onFont }: {
   health: string; theme: ThemeId; unlocked: ThemeId[]; onTheme: (id: ThemeId) => void
+  font: FontId; unlockedFonts: FontId[]; onFont: (id: FontId) => void
 }) {
   const [tasks, setTasks] = useState<TaskInstance[]>([])
   const [timers, setTimers] = useState<TimerRecord[]>([])
@@ -67,7 +68,14 @@ export function SettingsPage({ health, theme, unlocked, onTheme }: {
       <select id="theme-choice" value={theme} onChange={e => onTheme(e.target.value as ThemeId)}>
         {THEMES.map(item => <option key={item.id} value={item.id} disabled={!unlocked.includes(item.id)}>
           {item.name}{unlocked.includes(item.id) ? '' : '（未兑换）'}</option>)}
-      </select></section>
+      </select>
+      <label htmlFor="font-choice">界面字体</label>
+      <select id="font-choice" value={font} onChange={e => onFont(e.target.value as FontId)}>
+        {FONTS.map(item => <option key={item.id} value={item.id} disabled={!unlockedFonts.includes(item.id)}>
+          {item.name}{unlockedFonts.includes(item.id) ? '' : '（请到金币与风格购买）'}</option>)}
+      </select>
+      <p className="muted-small">字体可以在“金币与风格”页面预览；仿宋体免费，其余字体每种 200 金币。</p>
+    </section>
     <section className="panel"><h2>全部记录汇总</h2>
       <p>计划：{tasks.length} 条，已结算 {tasks.filter(t => t.status === 'settled').length} 条，累计计时 {Math.floor(timers.reduce((sum, t) => sum + elapsedMs(t), 0) / 60000)} 分钟</p>
       <p>饮食：{meals.length} 餐，已记录花费 ¥{meals.reduce((sum, r) => sum + (r.spent ?? 0), 0).toFixed(2)}</p>

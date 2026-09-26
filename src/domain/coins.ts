@@ -1,6 +1,6 @@
 import { all, announceChange, openDatabase, requestValue, transactionDone } from '../db/database'
 import type { CoinEntry, Setting, TaskInstance, TimerRecord } from '../db/types'
-import { localDateKey, nextMidnight, payoutFor, rewardCap, THEMES, type ThemeId } from './rules'
+import { localDateKey, nextMidnight, payoutFor, rewardCap, FONTS, THEMES, type FontId, type ThemeId } from './rules'
 import { elapsedMs, materializeThrough } from './tasks'
 
 export async function balance(): Promise<number> {
@@ -76,6 +76,33 @@ export async function redeem(theme: ThemeId, now = Date.now()): Promise<void> {
     ledger.add({ id, sourceKey: `redemption:${id}`, amount: -item.price, at: now, reason: `兑换风格 · ${item.name}` })
     settings.put({ key: `unlocked:${theme}`, value: true })
     settings.put({ key: 'theme', value: theme })
+    await done
+    announceChange()
+  } catch (error) {
+    try { tx.abort() } catch { /* IndexedDB already aborted the transaction. */ }
+    await done.catch(() => {})
+    throw error
+  }
+}
+
+export async function redeemFont(font: FontId, now = Date.now()): Promise<void> {
+  const item = FONTS.find(option => option.id === font)
+  if (!item || item.price === 0) throw new Error('请选择可兑换的字体')
+  const db = await openDatabase()
+  const tx = db.transaction(['ledger', 'settings'], 'readwrite')
+  const done = transactionDone(tx)
+  try {
+    const settings = tx.objectStore('settings')
+    const key = `unlocked:font:${font}`
+    const unlocked = await requestValue<Setting | undefined>(settings.get(key))
+    if (unlocked?.value === true) throw new Error('已经购买过该字体')
+    const ledger = tx.objectStore('ledger')
+    const entries = await requestValue<CoinEntry[]>(ledger.getAll())
+    if (entries.reduce((sum, entry) => sum + entry.amount, 0) < item.price) throw new Error('金币不足，暂时无法购买字体')
+    const id = crypto.randomUUID()
+    ledger.add({ id, sourceKey: `font-redemption:${id}`, amount: -item.price, at: now, reason: `购买字体 · ${item.name}` })
+    settings.put({ key, value: true })
+    settings.put({ key: 'font', value: font })
     await done
     announceChange()
   } catch (error) {

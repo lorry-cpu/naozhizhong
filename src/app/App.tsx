@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { byId, remove, setting, saveSetting, storageHealth, watchChanges } from '../db/database'
-import { nextMidnight, localDateKey, type ThemeId } from '../domain/rules'
+import { FONTS, nextMidnight, localDateKey, type FontId, type ThemeId } from '../domain/rules'
 import { TasksPage } from '../pages/TasksPage'
 import { CoinsPage } from '../pages/CoinsPage'
 import { balance, reconcile } from '../domain/coins'
@@ -40,10 +40,12 @@ export function App() {
   const [memo, setMemo] = useState('')
   const memoEdited = useRef(false)
   const [theme, setTheme] = useState<ThemeId>('warm')
+  const [font, setFont] = useState<FontId>('fangsong')
   const [message, setMessage] = useState('')
   const [health, setHealth] = useState('正在检查本地存储…')
   const [coins, setCoins] = useState(0)
   const [unlocked, setUnlocked] = useState<ThemeId[]>(['warm'])
+  const [unlockedFonts, setUnlockedFonts] = useState<FontId[]>(['fangsong'])
   const [wallpaper, setWallpaper] = useState<string | null>(null)
   const [wallpaperOpacity, setWallpaperOpacity] = useState(0.35)
   const [wallpaperOpen, setWallpaperOpen] = useState(false)
@@ -66,6 +68,13 @@ export function App() {
       })
       .catch(error => {
         if (active) setMessage(`读取风格失败：${String(error)}`)
+      })
+    void setting('font')
+      .then(savedFont => {
+        if (active && FONTS.some(item => item.id === savedFont)) setFont(savedFont as FontId)
+      })
+      .catch(error => {
+        if (active) setMessage(`读取字体失败：${String(error)}`)
       })
     void storageHealth()
       .then(status => {
@@ -92,15 +101,24 @@ export function App() {
     return watchChanges(loadWallpaper)
   }, [])
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
+  useEffect(() => { document.documentElement.dataset.font = font }, [font])
   useEffect(() => {
     async function refresh() {
       try {
-        const [value, selected, cool, focus] = await Promise.all([
-          balance(), setting('theme'), byId('settings', 'unlocked:cool'), byId('settings', 'unlocked:focus'),
+        const [value, selected, savedFont, cool, focus, ...fontSettings] = await Promise.all([
+          balance(), setting('theme'), setting('font'), byId('settings', 'unlocked:cool'), byId('settings', 'unlocked:focus'),
+          ...FONTS.filter(item => item.id !== 'fangsong').map(item => byId('settings', `unlocked:font:${item.id}`)),
         ])
         setCoins(value)
         setUnlocked(['warm', ...(cool?.value === true ? ['cool' as const] : []), ...(focus?.value === true ? ['focus' as const] : [])])
         if (selected === 'warm' || (selected === 'cool' && cool?.value === true) || (selected === 'focus' && focus?.value === true)) setTheme(selected)
+        if (savedFont && FONTS.some(item => item.id === savedFont)) setFont(savedFont as FontId)
+        setUnlockedFonts([
+          'fangsong',
+          ...FONTS.filter(item => item.id !== 'fangsong')
+            .filter((_, index) => fontSettings[index]?.value === true)
+            .map(item => item.id),
+        ])
       } catch (error) { setMessage(`读取本地数据失败：${String(error)}`) }
     }
     void refresh()
@@ -141,6 +159,11 @@ export function App() {
     if (!unlocked.includes(next)) { setMessage('请先在金币页面兑换该风格'); return }
     try { await saveSetting('theme', next); setTheme(next); setMessage('风格已保存') }
     catch (error) { setMessage(`风格保存失败：${String(error)}`) }
+  }
+  async function changeFont(next: FontId) {
+    if (!unlockedFonts.includes(next)) { setMessage('请先在金币页面购买该字体'); return }
+    try { await saveSetting('font', next); setFont(next); setMessage('字体已保存') }
+    catch (error) { setMessage(`字体保存失败：${String(error)}`) }
   }
   async function importWallpaper(file: File) {
     if (!file.type.startsWith('image/')) {
@@ -206,8 +229,10 @@ export function App() {
       <main className="content" id="main-content">
         {page === 'home' ? <HomePage memo={memo} onMemo={updateMemo} onSave={() => void persistMemo()} navigate={setPage} />
           : page === 'memo' ? <MemoPage />
-          : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)} />
-          : page === 'tasks' ? <TasksPage /> : page === 'coins' ? <CoinsPage current={theme} onTheme={setTheme} />
+          : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)}
+            font={font} unlockedFonts={unlockedFonts} onFont={next => void changeFont(next)} />
+          : page === 'tasks' ? <TasksPage /> : page === 'coins' ? <CoinsPage current={theme} onTheme={setTheme}
+            currentFont={font} unlockedFonts={unlockedFonts} onFont={setFont} />
           : page === 'food' ? <FoodPage /> : page === 'fun' ? <FunPage /> : page === 'badminton' ? <BadmintonPage /> : null}
         {message && <p role="status" className="feedback">{message}</p>}
       </main>

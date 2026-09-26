@@ -85,6 +85,13 @@ export function parseBackup(input: unknown): Backup {
   }
   const chosen = data.settings.find(row => row.key === 'theme')?.value
   if (chosen && chosen !== 'warm' && data.settings.find(row => row.key === `unlocked:${chosen}`)?.value !== true) throw new Error('当前风格尚未兑换')
+  const font = data.settings.find(row => row.key === 'font')?.value
+  if (font && (typeof font !== 'string' || !['fangsong', 'kaiti', 'handbook', 'source-han-sans', 'minimal', 'handwrite', 'source-han-serif'].includes(font))) {
+    throw new Error('当前字体无效')
+  }
+  if (font && font !== 'fangsong' && data.settings.find(row => row.key === `unlocked:font:${font}`)?.value !== true) {
+    throw new Error('当前字体尚未购买')
+  }
   return input as Backup
 }
 export async function importBackup(backup: Backup): Promise<void> {
