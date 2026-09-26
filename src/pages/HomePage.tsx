@@ -4,6 +4,10 @@ import type { Badminton, Entertainment, Meal, TaskInstance } from '../db/types'
 import { badmintonMinutes } from '../domain/life'
 import { localDateKey } from '../domain/rules'
 import type { PageId } from '../app/App'
+import { AppIcon } from '../components/AppIcon'
+
+const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const two = (value: number) => String(value).padStart(2, '0')
 
 export function HomePage({ memo, onMemo, onSave, navigate }: {
   memo: string; onMemo: (text: string) => void; onSave: () => void
@@ -14,6 +18,7 @@ export function HomePage({ memo, onMemo, onSave, navigate }: {
   const [fun, setFun] = useState<Entertainment[]>([])
   const [games, setGames] = useState<Badminton[]>([])
   const [error, setError] = useState('')
+  const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const load = () => {
       void Promise.all([all('occurrences'), all('meals'), all('entertainment'), all('badminton')])
@@ -24,36 +29,98 @@ export function HomePage({ memo, onMemo, onSave, navigate }: {
     const unwatch = watchChanges(load)
     return () => { unwatch(); window.clearInterval(interval) }
   }, [])
-  const today = localDateKey(new Date())
+  useEffect(() => {
+    const tick = window.setInterval(() => setNow(new Date()), 30_000)
+    return () => window.clearInterval(tick)
+  }, [])
+  const today = localDateKey(now)
   const todaysTasks = tasks.filter(row => row.date === today && row.status !== 'cancelled')
   const done = todaysTasks.filter(row => row.status === 'settled').length
+  const total = todaysTasks.length
+  const pendingTask = [...todaysTasks].filter(row => row.status === 'pending').sort((a, b) => a.time.localeCompare(b.time))[0]
   const todaysMeals = meals.filter(row => row.date === today).sort((a, b) => a.time.localeCompare(b.time))
   const todaysFun = fun.filter(row => row.date === today).sort((a, b) => a.plannedTime.localeCompare(b.plannedTime))
+  const mealSpent = todaysMeals.reduce((sum, row) => sum + (row.spent ?? 0), 0)
+  const funActual = todaysFun.reduce((sum, row) => sum + (row.actualMinutes ?? 0), 0)
   const latest = [...games].sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start))[0]
-  return <>
-    <h1>首页总览</h1><p className="subtitle">{today} · 看看今天的安排。</p>
-    <div className="card-grid">
-      <section className="panel summary-card"><h2>今日计划</h2><strong>{done} / {todaysTasks.length} 项已结算</strong>
-        <p>{todaysTasks.find(row => row.status === 'pending')?.title ?? '当前没有待打卡任务'}</p>
-        <button className="button-link" onClick={() => navigate('tasks')}>查看或新建任务 →</button></section>
+  const allDone = total > 0 && done === total
+  const listedTasks = [...todaysTasks].sort((a, b) => a.time.localeCompare(b.time))
+  return <div className="home">
+    <div className="home-head">
+      <div>
+        <h1 className="home-title">首页总览</h1>
+        <p className="home-stamp-line">现在 <strong>{two(now.getHours())}:{two(now.getMinutes())}</strong> · {today} {weekNames[now.getDay()]} · 看看今天的安排。</p>
+      </div>
     </div>
-    <section className="panel"><h2>备忘录</h2><label htmlFor="quick-memo">记录今天想到的事情</label>
-      <textarea id="quick-memo" value={memo} onChange={e => onMemo(e.target.value)} placeholder="比如：买球、补牛奶…" />
-      <div className="button-row"><button className="button-primary" onClick={onSave}>保存备忘</button>
-        <button className="button-link" onClick={() => navigate('memo')}>查看每天记录 →</button></div></section>
-    <div className="card-grid">
-      <section className="panel"><h2>今日饮食</h2>
-        <p>{todaysMeals.length ? todaysMeals.map(row => `${row.time} ${row.kind}：${row.food}`).join('；') : '今天还没有餐次安排'}</p>
-        <p>已记录花费 ¥{todaysMeals.reduce((sum, row) => sum + (row.spent ?? 0), 0).toFixed(2)}</p>
-        <button className="button-link" onClick={() => navigate('food')}>饮食计划 →</button></section>
-      <section className="panel"><h2>游戏娱乐</h2>
-        <p>{todaysFun.length ? todaysFun.map(row => `${row.plannedTime} ${row.title}`).join('；') : '今天还没有娱乐安排'}</p>
-        <p>实际已记录 {todaysFun.reduce((sum, row) => sum + (row.actualMinutes ?? 0), 0)} 分钟</p>
-        <button className="button-link" onClick={() => navigate('fun')}>娱乐记录 →</button></section>
-      <section className="panel"><h2>羽毛球近况</h2>
-        <p>{latest ? `${latest.date} · ${badmintonMinutes(latest)} 分钟 · ${latest.balls} 个球` : '还没有打球记录'}</p>
-        <button className="button-link" onClick={() => navigate('badminton')}>打球记录 →</button></section>
+
+    <div className="home-layout">
+      <section className="home-sheet home-plan">
+        <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="tasks" /></span>今日计划</h2>
+          <span className="home-head-note">{done} / {total} 项已结算</span></div>
+        <div className="home-plan-body">
+          {allDone && total > 0 && <p className="home-plan-done">今日全部完成</p>}
+          {listedTasks.length === 0
+            ? <p className="home-plan-empty">今天还没有安排任务</p>
+            : <ul className="home-plan-list">
+                {listedTasks.map(row => <li key={row.id} className={`home-plan-row ${row.status === 'settled' ? 'is-done' : ''}`}>
+                  <span className="home-tick" aria-hidden="true">{row.status === 'settled' ? '✓' : ''}</span>
+                  <span className="home-plan-text">
+                    <strong>{row.time}</strong> · {row.title}
+                  </span>
+                </li>)}
+              </ul>}
+          <div className="button-row">
+            <button className="button-link" onClick={() => navigate('tasks')}>{pendingTask ? '去打卡或查看 →' : '查看或新建任务 →'}</button>
+          </div>
+        </div>
+      </section>
+
+      <div className="home-col-side">
+        <div className="home-notes">
+          <section className="home-sheet home-memo">
+            <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="memo" /></span>备忘录</h2>
+              <span className="home-head-note">今天想到的事，随手记下</span></div>
+            <label htmlFor="quick-memo">记录今天想到的事情</label>
+            <textarea id="quick-memo" value={memo} onChange={e => onMemo(e.target.value)} placeholder="比如：买球、补牛奶…" />
+            <div className="button-row"><button className="button-primary" onClick={onSave}>保存备忘</button>
+              <button className="button-link" onClick={() => navigate('memo')}>查看每天记录 →</button></div>
+          </section>
+
+          <section className="home-sheet home-note home-note-food">
+            <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="food" /></span>今日饮食</h2></div>
+            <div className="home-note-body">
+              {todaysMeals.length
+                ? todaysMeals.map(row => <p className="home-line" key={row.id}><strong>{row.time}</strong> {row.kind}：{row.food}</p>)
+                : <p className="home-note-empty">今天还没记饮食，去安排一餐 →</p>}
+              <p className="home-line muted-small">已记录花费 ¥{mealSpent.toFixed(2)}</p>
+            </div>
+            <button className="button-link" onClick={() => navigate('food')}>饮食计划 →</button>
+          </section>
+
+          <section className="home-sheet home-note home-note-fun">
+            <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="fun" /></span>游戏娱乐</h2></div>
+            <div className="home-note-body">
+              {todaysFun.length
+                ? todaysFun.map(row => <p className="home-line" key={row.id}><strong>{row.plannedTime}</strong> {row.title}</p>)
+                : <p className="home-note-empty">今天还没安排娱乐，留一点放松时间 →</p>}
+              <p className="home-line muted-small">实际已记录 {funActual} 分钟</p>
+            </div>
+            <button className="button-link" onClick={() => navigate('fun')}>娱乐记录 →</button>
+          </section>
+
+          <section className="home-sheet home-note home-note-ball">
+            <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="badminton" /></span>羽毛球近况</h2></div>
+            <div className="home-note-body">
+              {latest
+                ? <p className="home-line"><strong>{latest.date}</strong> · {badmintonMinutes(latest)} 分钟 · {latest.balls} 个球</p>
+                : <p className="home-note-empty">还没有打球记录，打完记一笔 →</p>}
+            </div>
+            <button className="button-link" onClick={() => navigate('badminton')}>打球记录 →</button>
+          </section>
+        </div>
+      </div>
     </div>
+
     {error && <p role="alert" className="error">{error}</p>}
-  </>
+  </div>
 }

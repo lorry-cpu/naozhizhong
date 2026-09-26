@@ -11,16 +11,17 @@ import { HomePage } from '../pages/HomePage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { MemoPage } from '../pages/MemoPage'
 import { WallpaperDialog } from '../components/WallpaperDialog'
+import { AppIcon } from '../components/AppIcon'
 
 export const pages = [
-  { id: 'home', title: '首页总览', icon: '⌂' },
-  { id: 'memo', title: '备忘录', icon: '✎' },
-  { id: 'tasks', title: '今日计划', icon: '✓' },
-  { id: 'food', title: '饮食计划', icon: '♧' },
-  { id: 'fun', title: '游戏娱乐', icon: '◈' },
-  { id: 'badminton', title: '羽毛球', icon: '◇' },
-  { id: 'coins', title: '金币与风格', icon: '●' },
-  { id: 'settings', title: '数据与设置', icon: '▥' },
+  { id: 'home', title: '首页总览', icon: 'clock' },
+  { id: 'memo', title: '备忘录', icon: 'memo' },
+  { id: 'tasks', title: '今日计划', icon: 'tasks' },
+  { id: 'food', title: '饮食计划', icon: 'food' },
+  { id: 'fun', title: '游戏娱乐', icon: 'fun' },
+  { id: 'badminton', title: '羽毛球', icon: 'badminton' },
+  { id: 'coins', title: '金币与风格', icon: 'coins' },
+  { id: 'settings', title: '数据与设置', icon: 'settings' },
 ] as const
 
 export type PageId = typeof pages[number]['id']
@@ -203,26 +204,26 @@ export function App() {
     '--app-wallpaper-opacity': String(wallpaperOpacity),
   } as CSSProperties
   return (
-    <div className="app-shell" style={appStyle}>
+    <div className={`app-shell ${page === 'home' ? 'home-active' : ''}`} style={appStyle}>
       <header className="topbar">
         <button className="brand" type="button" aria-label="闹之钟，返回首页总览" title="返回首页总览" onClick={() => setPage('home')}>
-          <span className="brand-icon" aria-hidden="true">⏱</span><span>闹之钟</span>
+          <span className="brand-icon" aria-hidden="true"><AppIcon name="clock" /></span><span>闹之钟</span>
         </button>
         <nav aria-label="应用导航">
           {navigationPages.map(item => (
             <button key={item.id} type="button" className={`nav-item ${page === item.id ? 'active' : ''}`}
               onClick={() => setPage(item.id)} aria-label={item.title} title={item.title}
               aria-current={page === item.id ? 'page' : undefined}>
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+              <span className="nav-icon" aria-hidden="true"><AppIcon name={item.icon} /></span>
             </button>
           ))}
         </nav>
         <div className="top-actions">
           <button className="wallpaper-button" type="button" aria-label="设置壁纸" title="设置壁纸" onClick={() => { setWallpaperMessage(''); setWallpaperOpen(true) }}>
-            <span aria-hidden="true">▧</span>
+            <AppIcon name="wallpaper" />
           </button>
           <button className="top-balance" type="button" aria-label={`余额 ${coins}￥`} title="余额" onClick={() => setPage('coins')}>
-            <span className="coin-icon" aria-hidden="true">◎</span><span>{coins}￥</span>
+            <span className="coin-icon" aria-hidden="true"><AppIcon name="coins" /></span><span>{coins}￥</span>
           </button>
         </div>
       </header>
