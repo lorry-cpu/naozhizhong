@@ -26,7 +26,8 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
 
     const planImage = page.locator('.home-plan .home-art img')
     assert.equal(await planImage.count(), 1, '今日计划保留插画')
-    assert.equal(await planImage.getAttribute('src'), '/cards/plan.svg')
+    assert.equal(await planImage.getAttribute('src'), '/cards/plan-poster.jpg')
+    assert.equal((await page.request.get(`${origin}/cards/plan-poster.jpg`)).ok(), true, 'plan-poster.jpg 可读取')
     assert.equal(await planImage.evaluate(img => img.complete && img.naturalWidth > 0), true, '计划插画可以加载')
 
     for (const [card, file] of [

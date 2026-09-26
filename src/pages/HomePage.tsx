@@ -55,7 +55,7 @@ export function HomePage({ memo, onMemo, onSave, navigate }: {
 
     <div className="home-layout">
       <section className="home-sheet home-plan">
-        <div className="home-art" aria-hidden="true"><img src="/cards/plan.svg" alt="" /></div>
+        <div className="home-art" aria-hidden="true"><img src="/cards/plan-poster.jpg" alt="" /></div>
         <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="tasks" /></span>今日计划</h2>
           <span className="home-head-note">{done} / {total} 项已结算</span></div>
         <div className="home-plan-body">
