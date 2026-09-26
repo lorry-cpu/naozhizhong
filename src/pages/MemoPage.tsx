@@ -42,11 +42,13 @@ export function MemoPage() {
       <textarea id="memo-editor" value={text} onChange={event => { editedDate.current = date; setText(event.target.value) }} placeholder="记录今天想到的事情…" />
       <button className="button-primary" onClick={() => void save()}>保存备忘</button>
     </section>
-    <section className="panel"><h2>每天记录</h2>
-      {records.length === 0 && <p className="subtitle">还没有按日期保存的备忘。</p>}
-      {records.map(record => <button className={`memo-record ${record.date === date ? 'active' : ''}`} key={record.date} type="button" onClick={() => setDate(record.date)}>
-        <strong>{record.date}</strong><span>{record.text}</span>
-      </button>)}
+    <section className="panel memo-records-panel"><h2>每天记录</h2>
+      <div className="memo-records-scroll">
+        {records.length === 0 && <p className="subtitle">还没有按日期保存的备忘。</p>}
+        {records.map(record => <button className={`memo-record ${record.date === date ? 'active' : ''}`} key={record.date} type="button" onClick={() => setDate(record.date)}>
+          <strong>{record.date}</strong><span>{record.text}</span>
+        </button>)}
+      </div>
     </section>
     {message && <p role="status" className="feedback">{message}</p>}
   </>

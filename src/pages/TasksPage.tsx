@@ -105,6 +105,7 @@ export function TasksPage() {
     </section>}
     <section className="panel">
       <h2>{date} · 时间安排</h2>
+      <div className="tasks-list-scroll">
       {items.length === 0 && <p className="subtitle">这一天还没有计划，点击「新建任务」开始。</p>}
       {items.map(item => {
         const timer = timers[item.id]
@@ -136,6 +137,7 @@ export function TasksPage() {
           </div>}
         </div>
       })}
+      </div>
     </section>
     {punch && <div className="dialog-backdrop" role="presentation">
       <section className="dialog" role="dialog" aria-modal="true" aria-label="任务打卡">

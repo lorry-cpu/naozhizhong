@@ -228,6 +228,11 @@ export function App() {
         </div>
       </header>
       <main className="content" id="main-content">
+        {page !== 'home' && <div className="page-return-bar">
+          <button type="button" className="page-return" onClick={() => setPage('home')}>
+            <AppIcon name="clock" /><span>返回总览</span>
+          </button>
+        </div>}
         {page === 'home' ? <HomePage memo={memo} onMemo={updateMemo} onSave={() => void persistMemo()} navigate={setPage} />
           : page === 'memo' ? <MemoPage />
           : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)}
