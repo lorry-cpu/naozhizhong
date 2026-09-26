@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 240" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="court" x2=".2" y2="1"><stop stop-color="#d4ded6"/><stop offset=".57" stop-color="#b9ceca"/><stop offset="1" stop-color="#729897"/></linearGradient>
+    <radialGradient id="light"><stop stop-color="#fff0c9"/><stop offset="1" stop-color="#fff0c9" stop-opacity="0"/></radialGradient>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".51" numOctaves="3" stitchTiles="stitch" result="noise"/><feColorMatrix in="noise" type="saturate" values="0"/></filter>
+  </defs>
+  <path fill="url(#court)" d="M0 0h600v240H0z"/>
+  <ellipse cx="419" cy="48" rx="155" ry="98" fill="url(#light)"/>
+  <path d="M0 116c136 16 214-27 317-7 104 20 167-11 283-5v136H0z" fill="#9abbb1" opacity=".47"/>
+  <path d="M0 175c173 17 298-38 419-8 63 16 117 5 181-4v77H0z" fill="#5f8e86" opacity=".48"/>
+  <path d="M-20 219c211 0 376-24 639-12M321 146l-43 94m154-86 47 86" fill="none" stroke="#eaf1da" stroke-opacity=".68" stroke-width="2"/>
+  <path d="M64 218v-90m0 19c179 19 338 12 477-7m0-18v89" fill="none" stroke="#526e6c" stroke-opacity=".44" stroke-width="2"/>
+  <path d="m358 50 43 9-5 38-24 16-22-16z" fill="#f6efdd" opacity=".85" stroke="#71878a" stroke-width="1.5"/>
+  <path d="m358 50 14 63m29-54-29 54m6-59-6 59m18-56-18 56" fill="none" stroke="#93a9aa" stroke-width="1.5"/>
+  <path d="M352 97c1 20 11 30 20 30s19-10 20-30Z" fill="#c98278" stroke="#855e59" stroke-width="1.5"/>
+  <path fill="#fff" opacity=".34" d="M0 0h600v240H0z" filter="url(#grain)" style="mix-blend-mode:soft-light"/>
+</svg>

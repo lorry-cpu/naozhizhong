@@ -55,12 +55,13 @@ export function HomePage({ memo, onMemo, onSave, navigate }: {
 
     <div className="home-layout">
       <section className="home-sheet home-plan">
+        <div className="home-art" aria-hidden="true"><img src="/cards/plan.svg" alt="" /></div>
         <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="tasks" /></span>今日计划</h2>
           <span className="home-head-note">{done} / {total} 项已结算</span></div>
         <div className="home-plan-body">
           {allDone && total > 0 && <p className="home-plan-done">今日全部完成</p>}
           {listedTasks.length === 0
-            ? <p className="home-plan-empty">今天还没有安排任务</p>
+            ? <div className="home-plan-blank"><span className="home-plan-day" aria-hidden="true">{two(now.getDate())}</span><p className="home-plan-empty">今天还没有安排任务</p></div>
             : <ul className="home-plan-list">
                 {listedTasks.map(row => <li key={row.id} className={`home-plan-row ${row.status === 'settled' ? 'is-done' : ''}`}>
                   <span className="home-tick" aria-hidden="true">{row.status === 'settled' ? '✓' : ''}</span>
@@ -78,44 +79,56 @@ export function HomePage({ memo, onMemo, onSave, navigate }: {
       <div className="home-col-side">
         <div className="home-notes">
           <section className="home-sheet home-memo">
-            <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="memo" /></span>备忘录</h2>
-              <span className="home-head-note">今天想到的事，随手记下</span></div>
-            <label htmlFor="quick-memo">记录今天想到的事情</label>
-            <textarea id="quick-memo" value={memo} onChange={e => onMemo(e.target.value)} placeholder="比如：买球、补牛奶…" />
-            <div className="button-row"><button className="button-primary" onClick={onSave}>保存备忘</button>
-              <button className="button-link" onClick={() => navigate('memo')}>查看每天记录 →</button></div>
+            <div className="memo-paper">
+              <div className="memo-paper-head">
+                <h2>备忘录</h2><time dateTime={today}>{today}</time>
+              </div>
+              <label htmlFor="quick-memo" className="memo-sr-label">记录今天想到的事情</label>
+              <textarea id="quick-memo" value={memo} onChange={e => onMemo(e.target.value)} placeholder="今天想记下什么…" />
+              <div className="button-row"><button className="button-primary" onClick={onSave}>保存备忘</button>
+                <button className="button-link" onClick={() => navigate('memo')}>查看每天记录 →</button></div>
+            </div>
+            <svg className="memo-paperclip" viewBox="0 0 76 133" aria-hidden="true" focusable="false">
+              <path d="M24 50 34 107c3 19 32 18 29-5L52 22C49-1 16-1 18 23l2 18" />
+            </svg>
           </section>
 
           <section className="home-sheet home-note home-note-food">
-            <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="food" /></span>今日饮食</h2></div>
-            <div className="home-note-body">
-              {todaysMeals.length
-                ? todaysMeals.map(row => <p className="home-line" key={row.id}><strong>{row.time}</strong> {row.kind}：{row.food}</p>)
-                : <p className="home-note-empty">今天还没记饮食，去安排一餐 →</p>}
-              <p className="home-line muted-small">已记录花费 ¥{mealSpent.toFixed(2)}</p>
+            <div className="home-food-copy">
+              <h2 className="home-poster-title">今日饮食</h2>
+              <div className="home-note-body">
+                {todaysMeals.length
+                  ? todaysMeals.map(row => <p className="home-line" key={row.id}><strong>{row.time}</strong> {row.kind}：{row.food}</p>)
+                  : <p className="home-note-empty">今天还没记饮食，<span className="home-inline-action">去安排一餐 →</span></p>}
+                <p className="home-line muted-small">已记录花费 ¥{mealSpent.toFixed(2)}</p>
+              </div>
+              <button className="button-link" onClick={() => navigate('food')}>饮食计划 →</button>
             </div>
-            <button className="button-link" onClick={() => navigate('food')}>饮食计划 →</button>
           </section>
 
           <section className="home-sheet home-note home-note-fun">
-            <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="fun" /></span>游戏娱乐</h2></div>
-            <div className="home-note-body">
-              {todaysFun.length
-                ? todaysFun.map(row => <p className="home-line" key={row.id}><strong>{row.plannedTime}</strong> {row.title}</p>)
-                : <p className="home-note-empty">今天还没安排娱乐，留一点放松时间 →</p>}
-              <p className="home-line muted-small">实际已记录 {funActual} 分钟</p>
+            <div className="home-fun-copy">
+              <h2 className="home-poster-title">游戏娱乐</h2>
+              <div className="home-note-body">
+                {todaysFun.length
+                  ? todaysFun.map(row => <p className="home-line" key={row.id}><strong>{row.plannedTime}</strong> {row.title}</p>)
+                  : <p className="home-note-empty">今天还没安排娱乐，留一点放松时间 →</p>}
+                <p className="home-line muted-small">实际已记录 {funActual} 分钟</p>
+              </div>
+              <button className="button-link" onClick={() => navigate('fun')}>娱乐记录 →</button>
             </div>
-            <button className="button-link" onClick={() => navigate('fun')}>娱乐记录 →</button>
           </section>
 
           <section className="home-sheet home-note home-note-ball">
-            <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="badminton" /></span>羽毛球近况</h2></div>
-            <div className="home-note-body">
-              {latest
-                ? <p className="home-line"><strong>{latest.date}</strong> · {badmintonMinutes(latest)} 分钟 · {latest.balls} 个球</p>
-                : <p className="home-note-empty">还没有打球记录，打完记一笔 →</p>}
+            <div className="home-sport-copy">
+              <h2 className="home-poster-title">运动健康</h2>
+              <div className="home-note-body">
+                {latest
+                  ? <p className="home-line"><strong>{latest.date}</strong> · {badmintonMinutes(latest)} 分钟 · {latest.balls} 个球</p>
+                  : <p className="home-note-empty">还没有打球记录，<span className="home-inline-action">打完记一笔 →</span></p>}
+              </div>
+              <button className="button-link" onClick={() => navigate('badminton')}>打球记录 →</button>
             </div>
-            <button className="button-link" onClick={() => navigate('badminton')}>打球记录 →</button>
           </section>
         </div>
       </div>

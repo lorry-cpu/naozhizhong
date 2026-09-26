@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 240" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="wall" x2=".9" y2="1"><stop stop-color="#e8d2bd"/><stop offset=".7" stop-color="#f2e1c9"/><stop offset="1" stop-color="#c5aa92"/></linearGradient>
+    <radialGradient id="apple"><stop stop-color="#df9572"/><stop offset=".7" stop-color="#ba6753"/><stop offset="1" stop-color="#8e493c"/></radialGradient>
+    <radialGradient id="pear"><stop stop-color="#d3c48a"/><stop offset=".78" stop-color="#8b9c69"/><stop offset="1" stop-color="#667c5b"/></radialGradient>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".58" numOctaves="3" stitchTiles="stitch" result="noise"/><feColorMatrix in="noise" type="saturate" values="0"/></filter>
+  </defs>
+  <path fill="url(#wall)" d="M0 0h600v240H0z"/>
+  <path d="M0 183c116-13 227-1 303 0 141 3 216-11 297-19v76H0z" fill="#ad9680" opacity=".37"/>
+  <ellipse cx="308" cy="205" rx="205" ry="22" fill="#634d44" opacity=".22"/>
+  <ellipse cx="306" cy="195" rx="192" ry="29" fill="#f7f0dc" stroke="#d6c7ad" stroke-width="4"/>
+  <path d="M161 170c7-55 62-77 94-42 18 23 15 62-4 72-38 12-90-3-90-30Z" fill="url(#pear)"/>
+  <path d="M218 132c-8-15-8-28-2-36m3 16c11-17 25-20 33-18-3 13-15 23-33 18Z" fill="#718767" stroke="#617156" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="313" cy="152" rx="53" ry="52" fill="url(#apple)"/>
+  <ellipse cx="389" cy="165" rx="47" ry="43" fill="#c9805a"/>
+  <path d="M312 106c-3-12 1-22 9-28m8 30c13-16 25-18 38-15-7 17-20 24-38 15Zm60 15c-3-12-1-19 8-27m-14 26c-14-11-24-14-36-10 8 12 19 17 36 10Z" fill="#6d8765" stroke="#665b46" stroke-width="2" stroke-linecap="round"/>
+  <path d="M119 144c28-8 47-7 58 2m270 36c21-12 39-15 55-12" fill="none" stroke="#fff7df" stroke-opacity=".58" stroke-width="2"/>
+  <path fill="#fff" opacity=".33" d="M0 0h600v240H0z" filter="url(#grain)" style="mix-blend-mode:soft-light"/>
+</svg>

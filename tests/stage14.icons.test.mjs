@@ -6,7 +6,7 @@ import { chromium } from 'playwright'
 const origin = 'http://127.0.0.1:8765'
 const chrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
 
-test('六类参考图标统一为本地 SVG，首页标题与导航匹配且仍可操作', async () => {
+test('导航图标保持统一，普通首页标题与导航匹配且仍可操作', async () => {
   const server = spawn(process.execPath, ['launcher/serve.cjs', '--no-open'], { cwd: process.cwd() })
   let browser
   try {
@@ -19,23 +19,26 @@ test('六类参考图标统一为本地 SVG，首页标题与导航匹配且仍�
     await page.goto(origin)
     const navigation = page.getByRole('navigation', { name: '应用导航' })
     const categories = [
-      ['备忘录', '备忘录', 'memo'],
-      ['今日计划', '今日计划', 'tasks'],
-      ['饮食计划', '今日饮食', 'food'],
-      ['游戏娱乐', '游戏娱乐', 'fun'],
-      ['羽毛球', '羽毛球近况', 'badminton'],
+      ['备忘录', '备忘录', 'memo', false],
+      ['今日计划', '今日计划', 'tasks', true],
+      ['饮食计划', '今日饮食', 'food', false],
+      ['游戏娱乐', '游戏娱乐', 'fun', false],
+      ['羽毛球', '运动健康', 'badminton', false],
     ]
 
-    for (const [section, heading, name] of categories) {
+    for (const [section, heading, name, titleIconRequired] of categories) {
       const card = page.getByRole('heading', { name: heading })
       const titleIcon = card.locator('.home-heading-icon svg')
       const navIcon = navigation.getByRole('button', { name: section }).locator('svg')
-      assert.equal(await titleIcon.count(), 1, `${heading} 标题有图标`)
+      assert.equal(await titleIcon.count(), titleIconRequired ? 1 : 0,
+        titleIconRequired ? `${heading} 标题有图标` : `${heading} 使用图片背景承载标题`)
       assert.equal(await navIcon.count(), 1, `${section} 导航有图标`)
-      assert.equal(await titleIcon.locator('path, circle, rect').count() > 0, true)
-      assert.equal(await titleIcon.getAttribute('stroke'), 'currentColor', `${name} 随主题变色`)
-      assert.equal(await titleIcon.getAttribute('aria-hidden'), 'true')
-      assert.equal(await navIcon.innerHTML(), await titleIcon.innerHTML(), `${name} 两处使用相同造型`)
+      if (titleIconRequired) {
+        assert.equal(await titleIcon.locator('path, circle, rect').count() > 0, true)
+        assert.equal(await titleIcon.getAttribute('stroke'), 'currentColor', `${name} 随主题变色`)
+        assert.equal(await titleIcon.getAttribute('aria-hidden'), 'true')
+        assert.equal(await navIcon.innerHTML(), await titleIcon.innerHTML(), `${name} 两处使用相同造型`)
+      }
     }
     for (const label of ['金币与风格', '数据与设置']) {
       assert.equal(await navigation.getByRole('button', { name: label }).locator('svg').count(), 1)
