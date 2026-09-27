@@ -39,6 +39,7 @@ test('浏览器打开状态跨零点：部分打卡扣币、到期计时截断�
     await page.clock.install({ time: new Date('2026-09-24T15:59:55.000Z') })
     await page.goto('http://127.0.0.1:8765')
     await page.getByRole('navigation').getByRole('button', { name: '今日计划' }).click()
+    await page.locator('.tasks-view-switch').getByRole('button', { name: '日' }).click()
     const date = await page.getByLabel('查看日期').inputValue()
     await page.getByRole('button', { name: '新建任务' }).click()
     await page.getByPlaceholder('例如：阅读专业资料').fill('部分完成')
@@ -106,6 +107,7 @@ test('修改重复规则仅影响生效日之后，已生成的未来实例改�
     const page = context.pages()[0] || await context.newPage()
     await page.goto('http://127.0.0.1:8765')
     await page.getByRole('navigation').getByRole('button', { name: '今日计划' }).click()
+    await page.locator('.tasks-view-switch').getByRole('button', { name: '日' }).click()
     const dates = await page.evaluate(() => [0,1,2,8].map(offset => {
       const d = new Date(); d.setDate(d.getDate() + offset)
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`

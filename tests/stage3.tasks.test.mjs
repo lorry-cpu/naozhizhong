@@ -18,6 +18,7 @@ test('重复任务逐日独立，计时在暂停和重新打开浏览器后正�
     let page = context.pages()[0] || await context.newPage()
     await page.goto('http://127.0.0.1:8765')
     await page.getByRole('navigation').getByRole('button', { name: '今日计划' }).click()
+    await page.locator('.tasks-view-switch').getByRole('button', { name: '日' }).click()
     const today = await page.locator('input[aria-label="查看日期"]').inputValue()
     await page.getByRole('button', { name: '新建任务' }).click()
     await page.getByPlaceholder('例如：阅读专业资料').fill('阶段三每周训练')

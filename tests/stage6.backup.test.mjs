@@ -36,6 +36,7 @@ test('首页真实摘要和完整备份；无效文件、导入故障保留旧�
     await page.getByRole('button', { name: '保存打球记录' }).click()
     await page.getByText(/1 次 · 60 分钟 · 消耗 2 个球/).waitFor()
     await page.getByRole('navigation').getByRole('button', { name: '今日计划' }).click()
+    await page.locator('.tasks-view-switch').getByRole('button', { name: '日' }).click()
     await page.getByRole('button', { name: '新建任务' }).click()
     await page.getByPlaceholder('例如：阅读专业资料').fill('备份任务')
     await page.getByRole('button', { name: '保存任务' }).click()

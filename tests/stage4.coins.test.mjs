@@ -33,6 +33,7 @@ test('结算事务、补算零点、负数余额与双标签兑换幂等', async
     const page = context.pages()[0] || await context.newPage()
     await page.goto(origin)
     await page.getByRole('navigation').getByRole('button', { name: '今日计划' }).click()
+    await page.locator('.tasks-view-switch').getByRole('button', { name: '日' }).click()
     await page.getByRole('button', { name: '新建任务' }).click()
     await page.getByPlaceholder('例如：阅读专业资料').fill('失败回滚任务')
     await page.getByRole('button', { name: '保存任务' }).click()

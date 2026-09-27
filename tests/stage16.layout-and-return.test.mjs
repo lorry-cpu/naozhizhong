@@ -49,6 +49,7 @@ test('页面统一缩放、长列表在卡片内滚动并可返回总览', async
     assert.notEqual(await page.locator('.memo-records-scroll').evaluate(element => getComputedStyle(element).maxHeight), 'none')
 
     await navigation.getByRole('button', { name: '今日计划' }).click()
+    await page.locator('.tasks-view-switch').getByRole('button', { name: '日' }).click()
     assert.equal(await page.locator('.tasks-list-scroll').evaluate(element => getComputedStyle(element).overflowY), 'auto')
     assert.notEqual(await page.locator('.tasks-list-scroll').evaluate(element => getComputedStyle(element).maxHeight), 'none')
 
