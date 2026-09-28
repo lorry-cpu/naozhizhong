@@ -135,9 +135,15 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
       el => Number.parseFloat(getComputedStyle(el).rowGap),
     )
     assert.ok(noteGap >= 48, `右侧卡片间距已拉大到 48px（当前 ${noteGap}px）`)
+    // 今日计划卡片与右列同高（align-items: stretch），右列两行等高，
+    // 所以 plan.height 应等于 2 × 卡片高 + 行间距。
+    // 断言里带上实测值，失败时能直接看出差在哪里。
+    const columnHeight = desktopGeometry.food.height * 2 + noteGap
+    // 两张卡片各可能有 0.5px 的亚像素取整，容差取 2px。
     assert.ok(
-      Math.abs(desktopGeometry.plan.height - (desktopGeometry.food.height * 2 + noteGap)) <= 1,
-      '今日计划高度与右侧 2×2 卡片总高度对齐',
+      Math.abs(desktopGeometry.plan.height - columnHeight) <= 2,
+      `今日计划高度与右侧 2×2 卡片总高度对齐（今日计划 ${desktopGeometry.plan.height.toFixed(2)}，`
+      + `卡片 ${desktopGeometry.food.height.toFixed(2)} × 2 + 间距 ${noteGap} = ${columnHeight.toFixed(2)}）`,
     )
     // 四张卡片外沿必须与左侧今日计划卡片齐平：上下贴齐整列，右侧贴齐布局右缘。
     for (const [name, card] of Object.entries({

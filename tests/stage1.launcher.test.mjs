@@ -77,7 +77,17 @@ test('端口被其他网页占用时不误开浏览器', async () => {
   const occupied = createServer((request, response) => {
     response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end('<html>unrelated</html>')
   })
-  await new Promise(resolve => occupied.listen(8765, '127.0.0.1', resolve))
+  // 端口可能被上一次运行残留的服务占着：先探测，能连上就先报错说明原因，
+  // 而不是抛出难懂的 EADDRINUSE。
+  const portInUse = await fetch('http://127.0.0.1:8765').then(() => true).catch(() => false)
+  assert.equal(
+    portInUse, false,
+    '端口 8765 已被占用：请先关闭残留的闹之钟服务（或上一个测试进程）再重跑',
+  )
+  await new Promise((resolve, reject) => {
+    occupied.once('error', reject)
+    occupied.listen(8765, '127.0.0.1', resolve)
+  })
   let child
   try {
     child = spawn(process.execPath, ['launcher/serve.cjs', '--no-open'], { cwd: new URL('..', import.meta.url) })

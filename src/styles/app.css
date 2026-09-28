@@ -462,7 +462,9 @@ button:disabled { cursor: default; opacity: .65; }
 }
 .home-plan {
   --home-accent: #4b6f9c;
-  min-height: 100%;
+  /* 高度交给 .home-layout 的 align-items: stretch，不用 min-height:100%
+     的百分比（父级高度由内容决定时百分比不可靠）。 */
+  min-height: 600px;
   display: flex;
   flex-direction: column;
 }
@@ -719,7 +721,6 @@ button:disabled { cursor: default; opacity: .65; }
   border-radius: 2px;
 }
 .home-plan .home-art { height: clamp(180px, 20vw, 250px); margin-bottom: 23px; }
-.home-plan { min-height: 600px; }
 .home-plan-blank {
   flex: 1;
   min-height: 160px;
@@ -1139,8 +1140,10 @@ button:disabled { cursor: default; opacity: .65; }
    卡片不再变小、布局反而被撑高。 */
 @media (min-width: 901px) {
   .home-layout { align-items: stretch; }
-  .home-col-side,
-  .home-notes { height: 100%; }
+  /* 用网格自带的行拉伸，而不是 height:100% 的百分比链：
+     百分比高度需要父级有确定高度，而 .home-col-side 的高度本身由内容决定，
+     会让 1fr 的两行退化成内容高度、左右两列不再等高。 */
+  .home-col-side { display: grid; grid-template-rows: minmax(0, 1fr); }
   .home-notes {
     grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: var(--home-note-gap-y, 48px) var(--home-note-gap-x, 48px);

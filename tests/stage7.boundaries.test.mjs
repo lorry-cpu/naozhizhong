@@ -20,9 +20,13 @@ test('跨年跨月及每周重复；金币阈值与生活数据边界', () => {
   assert.deepEqual([0, 49, 50, 100].map(p => payoutFor(20,p)), [-20,-1,10,20])
   assert.throws(() => validateMeal({id:'a',date:'2026-12-30',kind:'午餐',time:'12:00',food:'米饭',spent:-1}))
   assert.throws(() => validateBadminton({id:'a',date:'2026-12-30',start:'18:00',end:'17:00',balls:1,training:'高远球',feeling:'好'}))
+  // 子进程的 stdout 会被 Node 加上 ANSI 颜色码（数字默认黄色），
+  // 这里显式关掉颜色再比对，避免把 "\x1B[33m23\x1B[39m" 当成结果。
   const dst = execFileSync(process.execPath, ['--input-type=module', '-e',
     "import { nextMidnight } from './src/domain/rules.ts'; console.log((nextMidnight('2026-03-08')-new Date(2026,2,8).getTime())/3600000)"],
-    { env: { ...process.env, TZ: 'America/New_York' }, encoding: 'utf8' }).trim()
+    { env: { ...process.env, TZ: 'America/New_York', NO_COLOR: '1', FORCE_COLOR: '0' }, encoding: 'utf8' })
+    .replace(/\u001B\[[0-9;]*m/g, '')
+    .trim()
   assert.equal(dst, '23')
 })
 
