@@ -154,14 +154,20 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
       `今日计划高度与右侧 2×2 卡片总高度对齐（今日计划 ${desktopGeometry.plan.height.toFixed(2)}，`
       + `卡片 ${desktopGeometry.food.height.toFixed(2)} × 2 + 实际间距 ${renderedGap.toFixed(2)} = ${columnHeight.toFixed(2)}）`,
     )
-    // 四张卡片外沿必须与左侧今日计划卡片齐平：上下贴齐整列，右侧贴齐布局右缘。
-    for (const [name, card] of Object.entries({
-      memo: desktopGeometry.memo,
-      food: desktopGeometry.food,
-      fun: desktopGeometry.fun,
-      ball: desktopGeometry.ball,
-    })) {
-      assert.ok(Math.abs(card.right - desktopGeometry.plan.right) <= 1, `${name} 右外沿与今日计划齐平`)
+    // 2×2 网格里 memo/fun 在左列、food/ball 在右列。
+    // 版心右缘等于「右列」的右缘，所以只有右列两张卡片与今日计划右侧齐平；
+    // 左列两张的右缘应停在两列之间的间距处。
+    for (const name of ['food', 'ball']) {
+      assert.ok(
+        Math.abs(desktopGeometry[name].right - desktopGeometry.plan.right) <= 1,
+        `${name} 右外沿与今日计划齐平`,
+      )
+    }
+    for (const name of ['memo', 'fun']) {
+      assert.ok(
+        Math.abs((desktopGeometry.plan.right - desktopGeometry[name].right) - (desktopGeometry.food.width + renderedGap)) <= 1.5,
+        `${name} 停在两列之间（右缘 = 右列卡片宽 + 间距）`,
+      )
     }
     assert.ok(Math.abs(desktopGeometry.memo.top - desktopGeometry.plan.top) <= 1, '右上卡片上沿与今日计划齐平')
     assert.ok(Math.abs(desktopGeometry.fun.bottom - desktopGeometry.plan.bottom) <= 1, '右下卡片下沿与今日计划齐平')
