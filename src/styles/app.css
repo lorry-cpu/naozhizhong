@@ -855,7 +855,7 @@ button:disabled { cursor: default; opacity: .65; }
 }
 .home-note-ball .home-sport-copy {
   width: min(65%, 265px);
-  /* 顶部留白决定文字落点：比原来上移 10px，让整块文字落在更干净的草坡上。 */
+  /* 顶部留白决定文字落点：文字落在草坡与小路一带。 */
   padding: 82px 16px 16px;
   color: #fffdf5;
   border: 0;
@@ -863,7 +863,14 @@ button:disabled { cursor: default; opacity: .65; }
   background: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  text-shadow: 0 1px 4px rgba(8, 34, 30, .5);
+  /* 背景是插画，文字横跨蓝天／草坡／白色小路与花丛，最亮处与白字对比只有约
+     1.1:1。用多层深色描边式阴影压出稳定的暗底（不改动卡片背景，
+     保持「整张插画铺满」的原有设计）。 */
+  text-shadow:
+    0 1px 2px rgba(6, 28, 24, .92),
+    0 0 1px rgba(6, 28, 24, .9),
+    0 2px 6px rgba(6, 28, 24, .75),
+    0 3px 14px rgba(6, 28, 24, .55);
 }
 .home-inline-action {
   white-space: nowrap;

@@ -97,6 +97,16 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
     }
 
     await backgroundsLeaveRoomForCopy()
+    // 运动健康卡片是白字压在插画上，插画里同时有蓝天、亮草坡和白色小路，
+    // 没有阴影时最亮处的对比只有约 1.1:1（基本看不清）。
+    // 这里守住「多层深色阴影」这个补偿手段，防止被误删。
+    const sportShadow = await page.locator('.home-note-ball .home-sport-copy').evaluate(
+      el => getComputedStyle(el).textShadow,
+    )
+    const shadowLayers = sportShadow.split(/,(?![^(]*\))/).filter(part => part.trim()).length
+    assert.ok(shadowLayers >= 3, `运动健康文字保留多层阴影以压住插画亮部（当前 ${shadowLayers} 层）`)
+    assert.match(sportShadow, /rgba?\(/, '阴影带透明度，避免生硬黑边')
+
     // 游戏娱乐卡片文字统一为插画同色系的靛蓝：标题、正文、底部入口三者一致。
     const funTextColors = await page.evaluate(() => ({
       title: getComputedStyle(document.querySelector('.home-note-fun .home-poster-title')).color,
@@ -154,34 +164,63 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
       `今日计划高度与右侧 2×2 卡片总高度对齐（今日计划 ${desktopGeometry.plan.height.toFixed(2)}，`
       + `卡片 ${desktopGeometry.food.height.toFixed(2)} × 2 + 实际间距 ${renderedGap.toFixed(2)} = ${columnHeight.toFixed(2)}）`,
     )
-    // 2×2 网格里 memo/fun 在左列、food/ball 在右列。
-    // 版心右缘等于「右列」的右缘，所以只有右列两张卡片与今日计划右侧齐平；
-    // 左列两张的右缘应停在两列之间的间距处。
-    for (const name of ['food', 'ball']) {
-      assert.ok(
-        Math.abs(desktopGeometry[name].right - desktopGeometry.plan.right) <= 1,
-        `${name} 右外沿与今日计划齐平`,
-      )
-    }
-    for (const name of ['memo', 'fun']) {
-      assert.ok(
-        Math.abs((desktopGeometry.plan.right - desktopGeometry[name].right) - (desktopGeometry.food.width + renderedGap)) <= 1.5,
-        `${name} 停在两列之间（右缘 = 右列卡片宽 + 间距）`,
-      )
-    }
-    assert.ok(Math.abs(desktopGeometry.memo.top - desktopGeometry.plan.top) <= 1, '右上卡片上沿与今日计划齐平')
-    assert.ok(Math.abs(desktopGeometry.fun.bottom - desktopGeometry.plan.bottom) <= 1, '右下卡片下沿与今日计划齐平')
+    // 版式：左侧「今日计划」独占一列，右侧 2×2 网格（memo/food 第一行，fun/ball 第二行）。
+    // 所以四张卡片的右缘都对不齐 plan.right（那是左列的右缘），
+    // 真正该成立的是：整列 2×2 的右缘 == 布局右缘，左缘 == 布局中线之后，
+    // 且两行卡片各自上下填满整列高度。
+    const layout = await page.locator('.home-layout').evaluate((el) => {
+      const b = el.getBoundingClientRect()
+      return { left: b.left, right: b.right, width: b.width }
+    })
+    const notesBox = await page.locator('.home-notes').evaluate((el) => {
+      const b = el.getBoundingClientRect()
+      return { left: b.left, right: b.right, top: b.top, bottom: b.bottom, width: b.width }
+    })
+    assert.ok(Math.abs(notesBox.right - layout.right) <= 1, '右侧 2×2 贴合布局右缘')
+    assert.ok(notesBox.left > desktopGeometry.plan.right, '右侧 2×2 排在今日计划卡片之后')
+    assert.ok(
+      notesBox.width > desktopGeometry.plan.width,
+      `右侧 2×2 比左侧今日计划更宽（${notesBox.width.toFixed(1)} > ${desktopGeometry.plan.width.toFixed(1)}）`,
+    )
+    // 2×2 内部：memo/fun 在左列，food/ball 在右列。只有右列贴到网格右缘。
+    assert.ok(Math.abs(desktopGeometry.food.right - notesBox.right) <= 1, 'food 在网格右列，贴齐网格右缘')
+    assert.ok(Math.abs(desktopGeometry.ball.right - notesBox.right) <= 1, 'ball 在网格右列，贴齐网格右缘')
+    assert.ok(Math.abs(desktopGeometry.memo.right - desktopGeometry.fun.right) <= 1, 'memo/fun 同处网格左列，右缘一致')
+    assert.ok(desktopGeometry.memo.right < desktopGeometry.food.left, '左列卡片右缘在右列卡片左缘之前')
+    // 左列两张（memo/fun）右缘 = 右列两张左缘 - 列间距
+    // 注意 zoom：rect 是缩放后的像素，computed 的 columnGap 是未缩放的 CSS 值，
+    // 所以间距要乘上页面缩放系数再比较。
+    const uiScale = await page.locator('.app-shell').evaluate(
+      el => Number.parseFloat(getComputedStyle(el).zoom) || 1,
+    )
+    const colGap = await page.locator('.home-notes').evaluate(
+      el => Number.parseFloat(getComputedStyle(el).columnGap),
+    )
+    assert.ok(
+      Math.abs(desktopGeometry.food.left - desktopGeometry.memo.right - colGap * uiScale) <= 2,
+      `两列之间留有列间距（memo.right ${desktopGeometry.memo.right.toFixed(2)} → food.left ${desktopGeometry.food.left.toFixed(2)}，间距 ${colGap}×${uiScale}）`,
+    )
+    assert.ok(Math.abs(desktopGeometry.memo.top - desktopGeometry.plan.top) <= 1, '第一行卡片上沿与今日计划齐平')
+    assert.ok(Math.abs(desktopGeometry.fun.bottom - desktopGeometry.plan.bottom) <= 1, '第二行卡片下沿与今日计划齐平')
     // 右侧 2×2 整体右移 8px：左列收窄 8px、右列变宽 8px，两列合计不变。
-    // 用「左列宽度 + 间距 + 右列宽度 = 版心宽度」来校验版心没有被撑宽。
+    // 用「左列宽度 + 实际间距 + 右列宽度 = 版心宽度」校验版心没有被撑宽。
+    // 间距同样从实际位置量取（computed 的 columnGap 未缩放，不能直接与 rect 相加）。
     const layoutWidths = await page.locator('.home-layout').evaluate((el) => {
-      const styles = getComputedStyle(el)
-      const left = el.querySelector('.home-plan').getBoundingClientRect().width
-      const right = el.querySelector('.home-col-side').getBoundingClientRect().width
-      return { left, right, gap: Number.parseFloat(styles.columnGap), total: el.getBoundingClientRect().width }
+      const leftBox = el.querySelector('.home-plan').getBoundingClientRect()
+      const rightBox = el.querySelector('.home-col-side').getBoundingClientRect()
+      const totalBox = el.getBoundingClientRect()
+      return {
+        left: leftBox.width,
+        right: rightBox.width,
+        renderedGap: rightBox.left - leftBox.right,
+        total: totalBox.width,
+      }
     })
     assert.ok(
-      Math.abs(layoutWidths.left + layoutWidths.gap + layoutWidths.right - layoutWidths.total) <= 1,
-      '左列 + 间距 + 右列等于版心宽度（右侧右移没有撑宽版心）',
+      Math.abs(layoutWidths.left + layoutWidths.renderedGap + layoutWidths.right - layoutWidths.total) <= 1,
+      `左列 + 间距 + 右列等于版心宽度（${layoutWidths.left.toFixed(2)} + ${layoutWidths.renderedGap.toFixed(2)}`
+      + ` + ${layoutWidths.right.toFixed(2)} = ${(layoutWidths.left + layoutWidths.renderedGap + layoutWidths.right).toFixed(2)}`
+      + ` vs ${layoutWidths.total.toFixed(2)}）`,
     )
     assert.ok(layoutWidths.right > layoutWidths.left, '右列比左列宽，2×2 组合位于版心右侧')
 
