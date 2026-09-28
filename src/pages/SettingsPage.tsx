@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { all, saveSetting, setting, watchChanges } from '../db/database'
+import { clearFontCache, fontCacheBytes } from '../db/fonts'
 import { exportBackup, importBackup, parseBackup, type Backup } from '../db/backup'
 import type { Badminton, Entertainment, Meal, TaskInstance, TimerRecord } from '../db/types'
 import { badmintonMinutes } from '../domain/life'
@@ -18,6 +19,12 @@ export function SettingsPage({ health, theme, unlocked, onTheme, font, unlockedF
   const [lastExport, setLastExport] = useState<string | number | boolean>()
   const [pending, setPending] = useState<Backup | null>(null)
   const [message, setMessage] = useState('')
+  const [fontBytes, setFontBytes] = useState<number | null>(null)
+  useEffect(() => {
+    let active = true
+    void fontCacheBytes().then(bytes => { if (active) setFontBytes(bytes) }).catch(() => { if (active) setFontBytes(null) })
+    return () => { active = false }
+  }, [])
   useEffect(() => {
     const load = () => void Promise.all([
       all('occurrences'), all('timers'), all('meals'), all('entertainment'), all('badminton'), setting('lastExport'),
@@ -75,6 +82,19 @@ export function SettingsPage({ health, theme, unlocked, onTheme, font, unlockedF
           {item.name}{unlockedFonts.includes(item.id) ? '' : '（请到金币与风格购买）'}</option>)}
       </select>
       <p className="muted-small">字体可以在“金币与风格”页面预览；思源宋体免费，其余字体每种 200 金币。</p>
+      <p className="muted-small" data-testid="font-cache">
+        字体文件按需下载并缓存在本机，当前占用
+        {fontBytes === null ? '（无法读取）' : ` ${(fontBytes / 1024 / 1024).toFixed(1)} MB`}。
+        字体缓存不包含在备份文件里。
+      </p>
+      <button type="button" className="button-secondary" disabled={!fontBytes}
+        onClick={() => void (async () => {
+          try {
+            await clearFontCache()
+            setFontBytes(0)
+            setMessage('字体缓存已清除；再次使用时会重新下载。')
+          } catch (error) { setMessage(`清除字体缓存失败：${String(error)}`) }
+        })()}>清除字体缓存</button>
     </section>
     <section className="panel"><h2>全部记录汇总</h2>
       <p>计划：{tasks.length} 条，已结算 {tasks.filter(t => t.status === 'settled').length} 条，累计计时 {Math.floor(timers.reduce((sum, t) => sum + elapsedMs(t), 0) / 60000)} 分钟</p>

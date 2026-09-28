@@ -26,9 +26,17 @@ test('今日计划与四个生活日历分别保存自己的界面设置并持�
     const page = browser.pages()[0] || await browser.newPage()
     await page.goto(origin)
 
+    // 四个生活日历页面共用 .life-calendar-page，所以只等这个 class 会命中
+    // 上一个仍在 DOM 里的页面，导致后续读到旧页面的设置（偶发失败）。
+    // 改成等待导航按钮进入选中态，确保页面真的切换完成。
     const openPage = async (name, selector = '.life-calendar-page') => {
-      await page.getByRole('navigation').getByRole('button', { name }).click()
-      await page.locator(selector).waitFor()
+      const button = page.getByRole('navigation').getByRole('button', { name })
+      await button.click()
+      await page.waitForFunction(
+        target => document.querySelector(`nav button[aria-label="${target}"]`)?.getAttribute('aria-current') === 'page',
+        name,
+      )
+      await page.locator(selector).first().waitFor()
     }
 
     const openSettings = async () => {

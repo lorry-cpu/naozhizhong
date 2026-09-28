@@ -7,7 +7,9 @@
     "dev": "vite --host 127.0.0.1 --port 8765 --strictPort",
     "build": "tsc --noEmit && vite build",
     "test": "node --test --test-concurrency=1",
-    "start": "node launcher/serve.cjs --no-open"
+    "start": "node launcher/serve.cjs --no-open",
+    "fonts:check": "node scripts/pack-fonts.mjs --check",
+    "fonts:pack": "node scripts/pack-fonts.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",

@@ -13,21 +13,10 @@
   background: var(--app-bg);
   font-synthesis: none;
 }
-@font-face { font-family: "NaoFangSong"; src: url("/fonts/fangsong.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoKaiTi"; src: url("/fonts/kaiti.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoHandbook"; src: url("/fonts/handbook.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoSourceHanSans"; src: url("/fonts/source-han-sans.ttf") format("truetype"); font-weight: 100 900; font-display: swap; }
-@font-face { font-family: "NaoMinimal"; src: url("/fonts/minimal.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoHandwrite"; src: url("/fonts/handwrite.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoSourceHanSerif"; src: url("/fonts/source-han-serif.ttf") format("truetype"); font-weight: 100 900; font-display: swap; }
-@font-face { font-family: "NaoChaozi"; src: url("/fonts/chaozi.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoDunhuang"; src: url("/fonts/dunhuang.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoHefeng"; src: url("/fonts/hefeng.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoYongzi"; src: url("/fonts/yongzi.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoYange"; src: url("/fonts/yange.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoShangshou"; src: url("/fonts/shangshou.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoMengqingjiang"; src: url("/fonts/mengqingjiang.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "NaoTianwangxing"; src: url("/fonts/tianwangxing.ttf") format("truetype"); font-display: swap; }
+/* 字体文件不再打进构建产物（15 个共约 194MB，会让仓库 clone 极慢）。
+   改为首次使用时从 GitHub Releases 下载并由 src/db/fonts.ts 在运行时注入
+   @font-face。下面的 --app-font-family 保留系统字体作为兜底，
+   字体未下载完成时页面仍可正常阅读。 */
 :root[data-font="kaiti"] { --app-font-family: "NaoKaiTi", "KaiTi", "楷体", serif; }
 :root[data-font="handbook"] { --app-font-family: "NaoHandbook", "STXingkai", "华文行楷", cursive; }
 :root[data-font="source-han-sans"] { --app-font-family: "NaoSourceHanSans", "Noto Sans SC", sans-serif; }
@@ -138,6 +127,18 @@ h2 { font-size: 18px; margin: 0 0 14px; }
 .summary-card { background: rgba(var(--app-panel-rgb), .78); padding: 18px; border-radius: 12px; }
 .font-card { min-height: 200px; display: flex; flex-direction: column; align-items: flex-start; }
 .font-card .font-preview { flex: 1; width: 100%; display: flex; align-items: center; margin: 16px 0; font-size: 18px; line-height: 1.6; }
+/* 预览可点击（会触发字体下载）：去掉按钮默认外观，看起来仍是一段文字。 */
+button.font-preview {
+  padding: 8px 4px;
+  border: 1px dashed transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--app-ink);
+  text-align: left;
+  cursor: pointer;
+}
+button.font-preview:hover { border-color: var(--app-border); background: var(--app-soft); }
+button.font-preview:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
 .font-preview-fangsong .font-preview { font-family: "NaoFangSong", serif; }
 .font-preview-kaiti .font-preview { font-family: "NaoKaiTi", serif; }
 .font-preview-handbook .font-preview { font-family: "NaoHandbook", cursive; }

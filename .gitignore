@@ -1,5 +1,13 @@
 node_modules/
 .pnpm-store/
+
+# 字体共约 194MB，不进仓库：运行时从 GitHub Releases 按需下载并缓存到本机。
+# 需要打包时把 .ttf 放回 public/fonts/，见 scripts/pack-fonts.mjs。
+public/fonts/
+dist/fonts/
+# 字体打包产物
+release/
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

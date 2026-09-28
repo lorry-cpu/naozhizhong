@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { all, byId, saveSetting, watchChanges } from '../db/database'
+import { ensureFont, hasFont } from '../db/fonts'
 import type { CoinEntry } from '../db/types'
 import { balance, redeem, redeemFont } from '../domain/coins'
 import { FONTS, THEMES, type FontId, type ThemeId } from '../domain/rules'
@@ -13,6 +14,16 @@ export function CoinsPage({ current, onTheme, currentFont, unlockedFonts, onFont
   const [unlocked, setUnlocked] = useState<ThemeId[]>(['warm'])
   const [localUnlockedFonts, setLocalUnlockedFonts] = useState<FontId[]>(unlockedFonts)
   const [error, setError] = useState('')
+  /** 正在下载的字体 → 进度（0~1）；下载完成后移除。 */
+  const [previewing, setPreviewing] = useState<Record<string, number>>({})
+  /** 已缓存到本机的字体，用于把按钮文案换成「预览」。 */
+  const [cachedFonts, setCachedFonts] = useState<FontId[]>([])
+  useEffect(() => {
+    let active = true
+    void Promise.all(FONTS.map(item => hasFont(item.id).then(Boolean).catch(() => false)))
+      .then(flags => { if (active) setCachedFonts(FONTS.filter((_, index) => flags[index]).map(item => item.id)) })
+    return () => { active = false }
+  }, [previewing])
   async function load() {
     try {
       const [coins, history, cool, focus, ...fontSettings] = await Promise.all([
@@ -51,9 +62,23 @@ export function CoinsPage({ current, onTheme, currentFont, unlockedFonts, onFont
         if (!window.confirm(`花费 ${price} 金币购买并使用“${FONTS.find(item => item.id === id)?.name ?? '该字体'}”？`)) return
         await redeemFont(id)
       }
+      // onFont 由 App 的 changeFont 处理：保存设置并下载字体文件。
       onFont(id)
       await load()
     } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)) }
+  }
+  // 点击预览文字时才下载字体：这里是用户真正想看清字体样子的时机，
+  // 避免打开页面就同时拉取十几个文件、每个最大 27MB。
+  async function previewFont(id: FontId) {
+    if (previewing[id] || await hasFont(id)) return
+    setPreviewing(prev => ({ ...prev, [id]: 0 }))
+    try {
+      await ensureFont(id, ratio => setPreviewing(prev => ({ ...prev, [id]: ratio })))
+    } catch (reason) {
+      setError(`“${FONTS.find(item => item.id === id)?.name ?? id}”字体下载失败：${reason instanceof Error ? reason.message : String(reason)}`)
+    } finally {
+      setPreviewing(prev => { const next = { ...prev }; delete next[id]; return next })
+    }
   }
   return <>
     <h1>金币与风格</h1>
@@ -66,13 +91,24 @@ export function CoinsPage({ current, onTheme, currentFont, unlockedFonts, onFont
       </div>)}</div>
     </section>
     <section className="panel"><h2>字体商店</h2>
-      <p className="subtitle">思源宋体默认免费，其余字体每种 200 金币。点击卡片中的文字可以先预览。</p>
+      <p className="subtitle">思源宋体默认免费，其余字体每种 200 金币。点击卡片中的文字可以先预览；
+        字体文件按需下载（不进安装包），下载后会缓存到本机。</p>
       <div className="card-grid">{FONTS.map(item => {
         const isUnlocked = localUnlockedFonts.includes(item.id)
+        const progress = previewing[item.id]
+        const done = cachedFonts.includes(item.id)
         return <div className={`summary-card font-card font-preview-${item.id}`} data-testid={`font-card-${item.id}`} key={item.id}>
           <strong>{item.name}</strong>
-          <p className="font-preview" aria-label={`${item.name}预览`}>{item.preview}</p>
+          <button type="button" className="font-preview" aria-label={`预览${item.name}`}
+            onClick={() => void previewFont(item.id)}>
+            {item.preview}
+          </button>
           <p>{item.price === 0 ? '免费' : `${item.price} 金币`}</p>
+          <p className="muted-small" data-testid={`font-state-${item.id}`}>
+            {progress !== undefined
+              ? `正在下载字体…${Math.round(progress * 100)}%`
+              : done ? '字体已缓存到本机' : '点击上方文字下载并预览'}
+          </p>
           <button type="button" className="button-primary" disabled={currentFont === item.id}
             onClick={() => void chooseFont(item.id, item.price)}>
             {currentFont === item.id ? '使用中' : isUnlocked ? '切换使用' : '购买并使用'}

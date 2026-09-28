@@ -12,6 +12,7 @@ import { SettingsPage } from '../pages/SettingsPage'
 import { MemoPage } from '../pages/MemoPage'
 import { WallpaperDialog } from '../components/WallpaperDialog'
 import { PlanArtDialog, defaultPlanArt, normalizePlanArt } from '../components/PlanArtDialog'
+import { ensureFont, hasFont, useCachedFont } from '../db/fonts'
 import { AppIcon } from '../components/AppIcon'
 
 export const pages = [
@@ -115,6 +116,18 @@ export function App() {
     return watchChanges(loadPlanArt)
   }, [])
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
+  // 字体文件不进构建产物，改为运行时按需下载：
+  // 启动时只用本机已缓存的字体，不主动联网（避免首次打开就下载几十 MB）。
+  // 真正需要联网的时机是「用户选中一个还没缓存的字体」。
+  useEffect(() => {
+    let active = true
+    void hasFont(font)
+      .then(cached => {
+        if (active && cached) return useCachedFont(font)
+      })
+      .catch(() => { /* 缓存不可用时就退回系统兜底字体 */ })
+    return () => { active = false }
+  }, [font])
   useEffect(() => { document.documentElement.dataset.font = font }, [font])
   useEffect(() => {
     async function refresh() {
@@ -175,9 +188,21 @@ export function App() {
     catch (error) { setMessage(`风格保存失败：${String(error)}`) }
   }
   async function changeFont(next: FontId) {
-    if (!unlockedFonts.includes(next)) { setMessage('请先在金币页面购买该字体'); return }
-    try { await saveSetting('font', next); setFont(next); setMessage('字体已保存') }
-    catch (error) { setMessage(`字体保存失败：${String(error)}`) }
+    // 注意：这里不要用 unlockedFonts 做门禁。这个回调既被设置页使用，
+    // 也被金币页在「刚购买完」时调用；那一刻 App 的 unlockedFonts 状态
+    // 还没随刷新更新，用它判断会把刚买到的字体挡回去。
+    // 购买资格由调用方（CoinsPage / SettingsPage）负责校验。
+    try {
+      await saveSetting('font', next)
+      setFont(next)
+      // 字体文件按需下载：本机已有缓存时瞬时完成，否则联网拉取。
+      await ensureFont(next, ratio => {
+        if (ratio < 1) setMessage(`字体已保存，正在下载字体文件…${Math.round(ratio * 100)}%`)
+      })
+      setMessage('字体已保存')
+    } catch (error) {
+      setMessage(`字体已保存，但字体文件下载失败：${String(error)}。当前显示系统兜底字体。`)
+    }
   }
   async function importWallpaper(file: File) {
     if (!file.type.startsWith('image/')) {
@@ -282,9 +307,14 @@ export function App() {
             planArt={planArt} onPickPlanArt={() => { setPlanArtMessage(''); setPlanArtOpen(true) }} />
           : page === 'memo' ? <MemoPage />
           : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)}
-            font={font} unlockedFonts={unlockedFonts} onFont={next => void changeFont(next)} />
+            font={font} unlockedFonts={unlockedFonts}
+            onFont={next => {
+              // 设置页的字体下拉：未购买的字体不允许直接选中。
+              if (!unlockedFonts.includes(next)) { setMessage('请先在金币页面购买该字体'); return }
+              void changeFont(next)
+            }} />
           : page === 'tasks' ? <TasksPage /> : page === 'coins' ? <CoinsPage current={theme} onTheme={setTheme}
-            currentFont={font} unlockedFonts={unlockedFonts} onFont={setFont} />
+            currentFont={font} unlockedFonts={unlockedFonts} onFont={next => void changeFont(next)} />
           : page === 'food' ? <FoodPage /> : page === 'fun' ? <FunPage /> : page === 'badminton' ? <BadmintonPage /> : null}
         {message && <p role="status" className="feedback">{message}</p>}
       </main>

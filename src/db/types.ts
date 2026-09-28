@@ -65,6 +65,13 @@ export interface Setting {
   key: string
   value: string | number | boolean
 }
+/** 下载后缓存在本机的字体文件；不进备份（体积大且可重新下载）。 */
+export interface FontBlob {
+  id: string
+  data: Blob
+  bytes: number
+  fetchedAt: number
+}
 export interface Tables {
   templates: TaskTemplate
   occurrences: TaskInstance
@@ -74,6 +81,7 @@ export interface Tables {
   entertainment: Entertainment
   badminton: Badminton
   settings: Setting
+  fontBlobs: FontBlob
 }
 export type TableName = keyof Tables
 export type AppTheme = ThemeId

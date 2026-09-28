@@ -1,7 +1,12 @@
 import type { Setting, TableName, Tables } from './types'
 
 export const DB_NAME = 'personal-rhythm-v1'
-export const DB_VERSION = 1
+export const DB_VERSION = 2
+/**
+ * 参与备份／恢复的表。fontBlobs 刻意排除在外：
+ * 字体是可重新下载的缓存，体积大（单个最大约 27MB），
+ * 放进 JSON 备份会让备份文件难以使用。
+ */
 export const TABLES: TableName[] = ['templates', 'occurrences', 'timers', 'ledger', 'meals', 'entertainment', 'badminton', 'settings']
 let cached: Promise<IDBDatabase> | null = null
 const channel = typeof window === 'undefined' || typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('personal-rhythm-changes')
@@ -12,12 +17,16 @@ export function openDatabase(): Promise<IDBDatabase> {
     const request = indexedDB.open(DB_NAME, DB_VERSION)
     request.onupgradeneeded = () => {
       const db = request.result
+      const transaction = request.transaction!
       for (const name of TABLES) {
         if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, { keyPath: name === 'settings' ? 'key' : 'id' })
       }
-      const transaction = request.transaction!
-      transaction.objectStore('occurrences').createIndex('date', 'date')
-      transaction.objectStore('ledger').createIndex('sourceKey', 'sourceKey', { unique: true })
+      if (!db.objectStoreNames.contains('fontBlobs')) db.createObjectStore('fontBlobs', { keyPath: 'id' })
+      // 索引只在缺失时创建：v1 升级到 v2 时它们已存在，重复创建会抛错。
+      const occurrences = transaction.objectStore('occurrences')
+      if (!occurrences.indexNames.contains('date')) occurrences.createIndex('date', 'date')
+      const ledger = transaction.objectStore('ledger')
+      if (!ledger.indexNames.contains('sourceKey')) ledger.createIndex('sourceKey', 'sourceKey', { unique: true })
     }
     request.onsuccess = () => {
       request.result.onversionchange = () => { request.result.close(); cached = null }
