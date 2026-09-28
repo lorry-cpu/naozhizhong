@@ -131,19 +131,28 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
     }
     // 间距从 CSS 读取，避免写死数值：右侧卡片可以靠加大间距一起缩小，
     // 只要四张卡片外沿仍与今日计划卡片上下对齐即可。
+    //
+    // 注意：页面整体有 zoom（.app-shell 的 --ui-scale），getBoundingClientRect()
+    // 返回的是缩放后的像素，而 getComputedStyle().rowGap 是未经缩放的 CSS 值。
+    // 两者不能直接相加，所以这里直接从两个卡片的实际位置量出间距。
     const noteGap = await page.locator('.home-notes').evaluate(
       el => Number.parseFloat(getComputedStyle(el).rowGap),
     )
     assert.ok(noteGap >= 48, `右侧卡片间距已拉大到 48px（当前 ${noteGap}px）`)
+    const renderedGap = await page.evaluate(() => {
+      const food = document.querySelector('.home-note-food').getBoundingClientRect()
+      const fun = document.querySelector('.home-note-fun').getBoundingClientRect()
+      return fun.top - food.bottom
+    })
     // 今日计划卡片与右列同高（align-items: stretch），右列两行等高，
-    // 所以 plan.height 应等于 2 × 卡片高 + 行间距。
+    // 所以 plan.height 应等于 2 × 卡片高 + 实际间距。
     // 断言里带上实测值，失败时能直接看出差在哪里。
-    const columnHeight = desktopGeometry.food.height * 2 + noteGap
+    const columnHeight = desktopGeometry.food.height * 2 + renderedGap
     // 两张卡片各可能有 0.5px 的亚像素取整，容差取 2px。
     assert.ok(
       Math.abs(desktopGeometry.plan.height - columnHeight) <= 2,
       `今日计划高度与右侧 2×2 卡片总高度对齐（今日计划 ${desktopGeometry.plan.height.toFixed(2)}，`
-      + `卡片 ${desktopGeometry.food.height.toFixed(2)} × 2 + 间距 ${noteGap} = ${columnHeight.toFixed(2)}）`,
+      + `卡片 ${desktopGeometry.food.height.toFixed(2)} × 2 + 实际间距 ${renderedGap.toFixed(2)} = ${columnHeight.toFixed(2)}）`,
     )
     // 四张卡片外沿必须与左侧今日计划卡片齐平：上下贴齐整列，右侧贴齐布局右缘。
     for (const [name, card] of Object.entries({
