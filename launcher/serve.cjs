@@ -8,7 +8,7 @@ const port = 8765
 const publicDir = path.resolve(__dirname, '..', 'dist')
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json',
-  '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2' }
+  '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.ttf': 'font/ttf' }
 
 if (!fs.existsSync(path.join(publicDir, 'index.html'))) {
   console.error('未找到构建文件。请先执行 npm.cmd install 和 npm.cmd run build。')

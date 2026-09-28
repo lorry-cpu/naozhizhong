@@ -6,9 +6,9 @@ import { cancelTask, changeRepeat, createTask, elapsedMs, materializeThrough, pa
 import { settleTask } from '../domain/coins'
 import { exportBackup } from '../db/backup'
 import { taskCsv, taskIcs, taskJson, type TaskExport } from '../domain/taskExport'
+import { normalizeTextSize, normalizeTextTone, textToneOptions, type TextTone } from '../domain/calendarSettings'
 
 type ViewMode = 'day' | 'week' | 'month'
-type TextTone = 'light' | 'dark'
 type Form = {
   title: string
   startDate: string
@@ -23,6 +23,7 @@ type CalendarSettings = {
   opacity: number
   blur: number
   textTone: TextTone
+  textSize: number
   hideCompleted: boolean
   showMonthTasks: boolean
 }
@@ -33,6 +34,7 @@ const defaultSettings: CalendarSettings = {
   opacity: 78,
   blur: 26,
   textTone: 'light',
+  textSize: 100,
   hideCompleted: false,
   showMonthTasks: true,
 }
@@ -158,9 +160,10 @@ export function TasksPage() {
       setting('taskCalendarOpacity'),
       setting('taskCalendarBlur'),
       setting('taskCalendarTextTone'),
+      setting('taskCalendarTextSize'),
       setting('taskCalendarHideCompleted'),
       setting('taskCalendarShowMonthTasks'),
-    ]).then(([savedMode, width, scale, opacity, blur, textTone, hideCompleted, showMonthTasks]) => {
+    ]).then(([savedMode, width, scale, opacity, blur, textTone, textSize, hideCompleted, showMonthTasks]) => {
       if (!active) return
       if (savedMode === 'day' || savedMode === 'week' || savedMode === 'month') setMode(savedMode)
       setSettings({
@@ -168,7 +171,8 @@ export function TasksPage() {
         scale: settingNumber(scale, defaultSettings.scale),
         opacity: settingNumber(opacity, defaultSettings.opacity),
         blur: settingNumber(blur, defaultSettings.blur),
-        textTone: textTone === 'dark' ? 'dark' : 'light',
+        textTone: normalizeTextTone(textTone),
+        textSize: normalizeTextSize(textSize),
         hideCompleted: settingBoolean(hideCompleted, defaultSettings.hideCompleted),
         showMonthTasks: settingBoolean(showMonthTasks, defaultSettings.showMonthTasks),
       })
@@ -186,6 +190,7 @@ export function TasksPage() {
     '--task-calendar-scale': String(settings.scale / 100),
     '--task-calendar-opacity': String(glassFill),
     '--task-calendar-blur': `${settings.blur}px`,
+    '--task-calendar-text-scale': String(settings.textSize / 100),
     '--g': String(glassStrength),
     '--glass-fill': String(glassFill),
     '--glass-edge': String(0.1 + glassStrength * 0.26),
@@ -225,7 +230,7 @@ export function TasksPage() {
   async function persistSetting<K extends keyof CalendarSettings>(key: K, value: CalendarSettings[K]) {
     const next = { ...settings, [key]: value }
     setSettings(next)
-    const dbKey = ({ width: 'taskCalendarWidth', scale: 'taskCalendarScale', opacity: 'taskCalendarOpacity', blur: 'taskCalendarBlur', textTone: 'taskCalendarTextTone', hideCompleted: 'taskCalendarHideCompleted', showMonthTasks: 'taskCalendarShowMonthTasks' } as const)[key]
+    const dbKey = ({ width: 'taskCalendarWidth', scale: 'taskCalendarScale', opacity: 'taskCalendarOpacity', blur: 'taskCalendarBlur', textTone: 'taskCalendarTextTone', textSize: 'taskCalendarTextSize', hideCompleted: 'taskCalendarHideCompleted', showMonthTasks: 'taskCalendarShowMonthTasks' } as const)[key]
     try {
       await saveSetting(dbKey, value)
       setMessage('界面设置已保存')
@@ -392,7 +397,7 @@ export function TasksPage() {
     {settingsOpen && <div className="dialog-backdrop" role="presentation"><section className="dialog task-settings-dialog" role="dialog" aria-modal="true" aria-label="界面设置">
       <div className="dialog-header"><div><h2>界面设置</h2><p className="muted-small">调整日历的尺寸、透明度和显示方式。</p></div><button className="button-secondary dialog-close" type="button" aria-label="关闭界面设置" onClick={() => setSettingsOpen(false)}>×</button></div>
       <div className="task-setting-section"><h3>尺寸</h3><label>宽度 <output>{settings.width}px</output><input aria-label="宽度" type="range" min="760" max="1300" step="10" value={settings.width} onChange={event => void persistSetting('width', Number(event.target.value))} /></label><label>整体缩放 <output>{settings.scale}%</output><input aria-label="整体缩放" type="range" min="80" max="120" step="5" value={settings.scale} onChange={event => void persistSetting('scale', Number(event.target.value))} /></label></div>
-      <div className="task-setting-section"><h3>外观</h3><label>透明度 <output>{settings.opacity}%</output><input aria-label="透明度" type="range" min="45" max="100" step="1" value={settings.opacity} onChange={event => void persistSetting('opacity', Number(event.target.value))} /></label><label>毛玻璃 <output>{settings.blur}px</output><input aria-label="毛玻璃" type="range" min="0" max="48" step="1" value={settings.blur} onChange={event => void persistSetting('blur', Number(event.target.value))} /></label><div className="task-text-tone"><span>文字颜色</span><button type="button" className={settings.textTone === 'light' ? 'active' : ''} onClick={() => void persistSetting('textTone', 'light')}>亮色字</button><button type="button" className={settings.textTone === 'dark' ? 'active' : ''} onClick={() => void persistSetting('textTone', 'dark')}>暗色字</button></div></div>
+      <div className="task-setting-section"><h3>外观</h3><label>透明度 <output>{settings.opacity}%</output><input aria-label="透明度" type="range" min="45" max="100" step="1" value={settings.opacity} onChange={event => void persistSetting('opacity', Number(event.target.value))} /></label><label>毛玻璃 <output>{settings.blur}px</output><input aria-label="毛玻璃" type="range" min="0" max="48" step="1" value={settings.blur} onChange={event => void persistSetting('blur', Number(event.target.value))} /></label><label>文字大小 <output>{settings.textSize}%</output><input aria-label="文字大小" type="range" min="80" max="130" step="5" value={settings.textSize} onChange={event => void persistSetting('textSize', Number(event.target.value))} /></label><div className="task-text-tone"><span>文字颜色</span>{textToneOptions.map(option => <button key={option.value} type="button" className={settings.textTone === option.value ? 'active' : ''} onClick={() => void persistSetting('textTone', option.value)}>{option.label}</button>)}</div></div>
       <div className="task-setting-section"><h3>显示</h3><label className="task-checkbox"><input type="checkbox" checked={settings.hideCompleted} onChange={event => void persistSetting('hideCompleted', event.target.checked)} /><span>勾选完成后隐藏该条</span></label><label className="task-checkbox"><input type="checkbox" checked={settings.showMonthTasks} onChange={event => void persistSetting('showMonthTasks', event.target.checked)} /><span>月视图日期下列出任务</span></label></div>
       <div className="task-setting-section"><h3>导出计划</h3><div className="task-export-actions"><button type="button" onClick={() => void downloadTasks('json')}>JSON</button><button type="button" onClick={() => void downloadTasks('csv')}>CSV</button><button type="button" onClick={() => void downloadTasks('ics')}>日历 .ics</button></div></div>
       <div className="dialog-actions"><button className="button-primary" type="button" onClick={() => setSettingsOpen(false)}>完成</button></div>

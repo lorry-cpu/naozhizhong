@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>闹之钟 | 顶部导航预览</title>
+  <style>
+    :root { color-scheme: light; --bg: #f4f3ef; --panel: #fff; --ink: #24312d; --muted: #718078; --line: #e3e9e4; --green: #30785f; --soft: #eaf4ec; --gold: #906827; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: var(--bg); color: var(--ink); font: 15px/1.55 "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; }
+    .top { min-height: 76px; background: var(--panel); border-bottom: 1px solid var(--line); display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 28px; padding: 0 34px; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; padding: 7px 0; border: 0; color: var(--ink); background: none; font-size: 19px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .brand-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: var(--green); color: #fff; font-size: 20px; }
+    nav { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; }
+    .nav-button { position: relative; width: 46px; height: 46px; flex: 0 0 46px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: #46564f; font-size: 23px; cursor: pointer; }
+    .nav-button:hover, .nav-button.active { color: var(--green); background: var(--soft); }
+    .nav-button.active::after { position: absolute; content: ""; height: 2px; left: 10px; right: 10px; bottom: 3px; background: var(--green); border-radius: 2px; }
+    .nav-button:focus-visible, .brand:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+    .nav-button[data-label]:hover::before, .nav-button[data-label]:focus-visible::before { content: attr(data-label); position: absolute; z-index: 2; top: 52px; left: 50%; transform: translateX(-50%); padding: 5px 9px; border-radius: 5px; background: #24312d; color: white; font-size: 12px; line-height: 1.2; white-space: nowrap; }
+    .balance { border: 0; border-radius: 18px; padding: 8px 14px; color: var(--gold); background: #fff3db; white-space: nowrap; font: inherit; font-weight: 600; cursor: pointer; }
+    main { width: min(1120px, 100%); margin: 0 auto; padding: 32px 34px; }
+    h1 { margin: 0 0 6px; font-size: 25px; line-height: 1.4; }
+    .sub { margin: 0 0 22px; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+    .panel { min-width: 0; padding: 20px 22px; margin-bottom: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+    .panel h2 { margin: 0 0 10px; font-size: 17px; }
+    .panel p { margin: 5px 0; color: #53625b; }
+    .link { display: inline-block; margin-top: 8px; color: var(--green); font-weight: 600; }
+    .memo { min-height: 139px; }
+    .memo-box { height: 55px; margin-top: 10px; border: 1px solid var(--line); border-radius: 7px; background: #fbfcfa; }
+    .overview { padding: 0; }
+    @media (max-width: 780px) {
+      .top { grid-template-columns: auto minmax(0,1fr) auto; gap: 10px; min-height: 68px; padding: 0 12px; }
+      .brand { font-size: 16px; gap: 7px; }
+      .brand-icon { width: 30px; height: 30px; }
+      nav { justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+      nav::-webkit-scrollbar { display: none; }
+      .nav-button { width: 40px; height: 42px; flex-basis: 40px; font-size: 21px; }
+      .balance { padding: 7px 10px; font-size: 13px; }
+      main { padding: 22px 16px; }
+      .grid { grid-template-columns: 1fr; gap: 0; }
+    }
+    @media (max-width: 450px) {
+      .top { grid-template-columns: auto minmax(0,1fr) auto; gap: 6px; padding: 0 8px; }
+      .brand span:last-child { display: none; }
+      .nav-button { width: 36px; flex-basis: 36px; }
+      .balance { padding: 7px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <button class="brand" type="button" aria-label="闹之钟，返回首页总览" title="返回首页总览" onclick="selectPage('home')">
+      <span class="brand-icon" aria-hidden="true">⏰</span><span>闹之钟</span>
+    </button>
+    <nav aria-label="模块导航">
+      <button class="nav-button" type="button" data-page="memo" data-label="备忘录" aria-label="备忘录" title="备忘录" onclick="selectPage('memo')">📝</button>
+      <button class="nav-button" type="button" data-page="tasks" data-label="今日计划" aria-label="今日计划" title="今日计划" onclick="selectPage('tasks')">☑️</button>
+      <button class="nav-button" type="button" data-page="food" data-label="饮食计划" aria-label="饮食计划" title="饮食计划" onclick="selectPage('food')">🍽️</button>
+      <button class="nav-button" type="button" data-page="fun" data-label="游戏娱乐" aria-label="游戏娱乐" title="游戏娱乐" onclick="selectPage('fun')">🎮</button>
+      <button class="nav-button" type="button" data-page="badminton" data-label="羽毛球" aria-label="羽毛球" title="羽毛球" onclick="selectPage('badminton')">🏸</button>
+      <button class="nav-button" type="button" data-page="coins" data-label="金币与风格" aria-label="金币与风格" title="金币与风格" onclick="selectPage('coins')">🪙</button>
+      <button class="nav-button" type="button" data-page="settings" data-label="数据与设置" aria-label="数据与设置" title="数据与设置" onclick="selectPage('settings')">⚙️</button>
+    </nav>
+    <button class="balance" type="button" title="查看金币与风格">🪙 128 金币</button>
+  </header>
+  <main>
+    <section class="overview" data-view="home">
+      <h1>首页总览</h1>
+      <p class="sub">2026-09-25 · 看看今天的安排。</p>
+      <div class="grid">
+        <section class="panel"><h2>今日计划</h2><p>1 / 3 项已结算</p><p>下一项：整理本周学习笔记</p><span class="link">查看或新建任务 →</span></section>
+        <section class="panel memo"><h2>备忘录</h2><p>记录今天想到的事情</p><div class="memo-box" aria-hidden="true"></div></section>
+        <section class="panel"><h2>今日饮食</h2><p>08:30 早餐 · 鸡蛋、牛奶</p><p>已记录花费 ¥18.50</p><span class="link">饮食计划 →</span></section>
+        <section class="panel"><h2>游戏娱乐</h2><p>20:00 · 休闲游戏</p><p>实际已记录 35 分钟</p><span class="link">娱乐记录 →</span></section>
+        <section class="panel"><h2>羽毛球近况</h2><p>昨天 · 60 分钟 · 消耗 2 个球</p><span class="link">打球记录 →</span></section>
+      </div>
+    </section>
+  </main>
+  <script>
+    function selectPage(page) {
+      document.querySelectorAll('.nav-button').forEach(button => {
+        const active = button.dataset.page === page
+        button.classList.toggle('active', active)
+        button.setAttribute('aria-current', active ? 'page' : 'false')
+      })
+      document.querySelector('.overview h1').textContent = page === 'home' ? '首页总览' : document.querySelector(`[data-page="${page}"]`)?.dataset.label || '首页总览'
+    }
+  </script>
+</body>
+</html>

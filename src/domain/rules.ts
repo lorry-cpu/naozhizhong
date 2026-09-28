@@ -1,6 +1,21 @@
 export type Difficulty = 'easy' | 'medium' | 'hard'
 export type ThemeId = 'warm' | 'cool' | 'focus'
-export type FontId = 'fangsong' | 'kaiti' | 'handbook' | 'source-han-sans' | 'minimal' | 'handwrite' | 'source-han-serif'
+export type FontId =
+  | 'fangsong'
+  | 'kaiti'
+  | 'handbook'
+  | 'source-han-sans'
+  | 'minimal'
+  | 'handwrite'
+  | 'source-han-serif'
+  | 'chaozi'
+  | 'dunhuang'
+  | 'hefeng'
+  | 'yongzi'
+  | 'yange'
+  | 'shangshou'
+  | 'mengqingjiang'
+  | 'tianwangxing'
 export type RepeatRule = 'none' | 'daily' | 'weekly'
 
 export const THEMES: ReadonlyArray<{ id: ThemeId; name: string; price: number }> = [
@@ -10,13 +25,21 @@ export const THEMES: ReadonlyArray<{ id: ThemeId; name: string; price: number }>
 ]
 
 export const FONTS: ReadonlyArray<{ id: FontId; name: string; price: number; preview: string }> = [
-  { id: 'fangsong', name: '仿宋体', price: 0, preview: '清晰端正，适合每天使用。' },
+  { id: 'fangsong', name: '仿宋体', price: 200, preview: '清晰端正，适合每天使用。' },
   { id: 'kaiti', name: '楷体', price: 200, preview: '一笔一画，温和有序。' },
   { id: 'handbook', name: '手帐风格 · 华文行楷', price: 200, preview: '写下今天的小目标。' },
   { id: 'source-han-sans', name: '思源黑体', price: 200, preview: '简洁现代，阅读轻松。' },
   { id: 'minimal', name: '极简风格 · 等线', price: 200, preview: '专注当下，保持节奏。' },
   { id: 'handwrite', name: '手写体 · 华文隶书', price: 200, preview: '把生活写成自己的样子。' },
-  { id: 'source-han-serif', name: '思源宋体', price: 200, preview: '沉静阅读，慢慢积累。' },
+  { id: 'source-han-serif', name: '思源宋体', price: 0, preview: '沉静阅读，慢慢积累。' },
+  { id: 'chaozi', name: '潮字社放浪简', price: 200, preview: '自由舒展，写出鲜明个性。' },
+  { id: 'dunhuang', name: '敦煌飞天楷', price: 200, preview: '古意流转，端庄而灵动。' },
+  { id: 'hefeng', name: '和风书道昭和银龙·传神', price: 200, preview: '落笔有势，书写更有气韵。' },
+  { id: 'yongzi', name: '汉仪永字流云隶', price: 200, preview: '隶意舒朗，日常记录也从容。' },
+  { id: 'yange', name: 'Aa燕歌行', price: 200, preview: '轻盈有致，让页面更有风格。' },
+  { id: 'shangshou', name: '上首仙墨书法体', price: 200, preview: '墨色纵横，适合醒目的标题。' },
+  { id: 'mengqingjiang', name: '汉仪孟庆江行书', price: 200, preview: '行云流水，记录每个念头。' },
+  { id: 'tianwangxing', name: '天王星像素', price: 200, preview: '像素清晰，带来轻巧的科技感。' },
 ]
 
 const difficultyRates: Record<Difficulty, number> = {

@@ -41,12 +41,12 @@ export function App() {
   const [memo, setMemo] = useState('')
   const memoEdited = useRef(false)
   const [theme, setTheme] = useState<ThemeId>('warm')
-  const [font, setFont] = useState<FontId>('fangsong')
+  const [font, setFont] = useState<FontId>('source-han-serif')
   const [message, setMessage] = useState('')
   const [health, setHealth] = useState('正在检查本地存储…')
   const [coins, setCoins] = useState(0)
   const [unlocked, setUnlocked] = useState<ThemeId[]>(['warm'])
-  const [unlockedFonts, setUnlockedFonts] = useState<FontId[]>(['fangsong'])
+  const [unlockedFonts, setUnlockedFonts] = useState<FontId[]>(['source-han-serif'])
   const [wallpaper, setWallpaper] = useState<string | null>(null)
   const [wallpaperOpacity, setWallpaperOpacity] = useState(0.35)
   const [wallpaperOpen, setWallpaperOpen] = useState(false)
@@ -108,15 +108,15 @@ export function App() {
       try {
         const [value, selected, savedFont, cool, focus, ...fontSettings] = await Promise.all([
           balance(), setting('theme'), setting('font'), byId('settings', 'unlocked:cool'), byId('settings', 'unlocked:focus'),
-          ...FONTS.filter(item => item.id !== 'fangsong').map(item => byId('settings', `unlocked:font:${item.id}`)),
+          ...FONTS.filter(item => item.id !== 'source-han-serif').map(item => byId('settings', `unlocked:font:${item.id}`)),
         ])
         setCoins(value)
         setUnlocked(['warm', ...(cool?.value === true ? ['cool' as const] : []), ...(focus?.value === true ? ['focus' as const] : [])])
         if (selected === 'warm' || (selected === 'cool' && cool?.value === true) || (selected === 'focus' && focus?.value === true)) setTheme(selected)
         if (savedFont && FONTS.some(item => item.id === savedFont)) setFont(savedFont as FontId)
         setUnlockedFonts([
-          'fangsong',
-          ...FONTS.filter(item => item.id !== 'fangsong')
+          'source-han-serif',
+          ...FONTS.filter(item => item.id !== 'source-han-serif')
             .filter((_, index) => fontSettings[index]?.value === true)
             .map(item => item.id),
         ])

@@ -59,7 +59,7 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
     async function backgroundsLeaveRoomForCopy() {
       for (const [cardClass, copyClass, expectedColor, expectedGlass] of [
         ['home-note-food', 'home-food-copy', 'rgb(168, 74, 12)', true],
-        ['home-note-fun', 'home-fun-copy', 'rgb(36, 33, 30)', false],
+        ['home-note-fun', 'home-fun-copy', 'rgb(44, 53, 87)', false],
         ['home-note-ball', 'home-sport-copy', 'rgb(255, 253, 245)', false],
       ]) {
         const card = page.locator(`.${cardClass}`)
@@ -88,6 +88,8 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
           assert.equal(composition.borderTopWidth, '0px', `${cardClass} 没有文字边框`)
           assert.equal(composition.backdropFilter, 'none', `${cardClass} 没有文字模糊层`)
           if (cardClass === 'home-note-ball') {
+            // 文字必须落在绿色草坡上：顶部留白要越过插画上方的蓝天（约 69px），
+            // 桌面 82px、窄屏 80px，都留有余量。
             assert.ok(parseFloat(composition.paddingTop) >= 80, `${cardClass} 文字位于绿色背景区域`)
           }
         }
@@ -95,13 +97,20 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
     }
 
     await backgroundsLeaveRoomForCopy()
-    const funActionColor = await page.locator('.home-note-fun .button-link').evaluate(el => getComputedStyle(el).color)
-    assert.equal(funActionColor, 'rgb(255, 253, 245)', '游戏娱乐底部入口使用白色文字')
+    // 游戏娱乐卡片文字统一为插画同色系的靛蓝：标题、正文、底部入口三者一致。
+    const funTextColors = await page.evaluate(() => ({
+      title: getComputedStyle(document.querySelector('.home-note-fun .home-poster-title')).color,
+      body: getComputedStyle(document.querySelector('.home-note-fun .home-note-empty, .home-note-fun .home-note-body .home-line')).color,
+      action: getComputedStyle(document.querySelector('.home-note-fun .button-link')).color,
+    }))
+    for (const [part, color] of Object.entries(funTextColors)) {
+      assert.equal(color, 'rgb(44, 53, 87)', `游戏娱乐${part} 使用统一的靛蓝文字`)
+    }
 
     const desktopGeometry = await page.evaluate(() => {
       const rect = selector => {
         const box = document.querySelector(selector).getBoundingClientRect()
-        return { width: box.width, height: box.height }
+        return { width: box.width, height: box.height, left: box.left, right: box.right, top: box.top, bottom: box.bottom }
       }
       return {
         plan: rect('.home-plan'),
@@ -120,10 +129,40 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
       assert.ok(Math.abs(card.width - desktopGeometry.food.width) <= 1, `${name} 宽度与右侧卡片统一`)
       assert.ok(Math.abs(card.height - desktopGeometry.food.height) <= 1, `${name} 高度与右侧卡片统一`)
     }
+    // 间距从 CSS 读取，避免写死数值：右侧卡片可以靠加大间距一起缩小，
+    // 只要四张卡片外沿仍与今日计划卡片上下对齐即可。
+    const noteGap = await page.locator('.home-notes').evaluate(
+      el => Number.parseFloat(getComputedStyle(el).rowGap),
+    )
+    assert.ok(noteGap >= 48, `右侧卡片间距已拉大到 48px（当前 ${noteGap}px）`)
     assert.ok(
-      Math.abs(desktopGeometry.plan.height - (desktopGeometry.food.height * 2 + 16)) <= 1,
+      Math.abs(desktopGeometry.plan.height - (desktopGeometry.food.height * 2 + noteGap)) <= 1,
       '今日计划高度与右侧 2×2 卡片总高度对齐',
     )
+    // 四张卡片外沿必须与左侧今日计划卡片齐平：上下贴齐整列，右侧贴齐布局右缘。
+    for (const [name, card] of Object.entries({
+      memo: desktopGeometry.memo,
+      food: desktopGeometry.food,
+      fun: desktopGeometry.fun,
+      ball: desktopGeometry.ball,
+    })) {
+      assert.ok(Math.abs(card.right - desktopGeometry.plan.right) <= 1, `${name} 右外沿与今日计划齐平`)
+    }
+    assert.ok(Math.abs(desktopGeometry.memo.top - desktopGeometry.plan.top) <= 1, '右上卡片上沿与今日计划齐平')
+    assert.ok(Math.abs(desktopGeometry.fun.bottom - desktopGeometry.plan.bottom) <= 1, '右下卡片下沿与今日计划齐平')
+    // 右侧 2×2 整体右移 8px：左列收窄 8px、右列变宽 8px，两列合计不变。
+    // 用「左列宽度 + 间距 + 右列宽度 = 版心宽度」来校验版心没有被撑宽。
+    const layoutWidths = await page.locator('.home-layout').evaluate((el) => {
+      const styles = getComputedStyle(el)
+      const left = el.querySelector('.home-plan').getBoundingClientRect().width
+      const right = el.querySelector('.home-col-side').getBoundingClientRect().width
+      return { left, right, gap: Number.parseFloat(styles.columnGap), total: el.getBoundingClientRect().width }
+    })
+    assert.ok(
+      Math.abs(layoutWidths.left + layoutWidths.gap + layoutWidths.right - layoutWidths.total) <= 1,
+      '左列 + 间距 + 右列等于版心宽度（右侧右移没有撑宽版心）',
+    )
+    assert.ok(layoutWidths.right > layoutWidths.left, '右列比左列宽，2×2 组合位于版心右侧')
 
     const inlineActions = page.locator('.home-inline-action')
     assert.equal(await inlineActions.count(), 2, '空状态入口存在')

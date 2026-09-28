@@ -1,0 +1,52 @@
+[
+  {
+    "name": "sliders actually respond to input (harness sanity)",
+    "pass": true,
+    "detail": "dialog inputs reported {\"宽度\":\"1300\",\"整体缩放\":\"100\",\"透明度\":\"45\",\"毛玻璃\":\"48\"}"
+  },
+  {
+    "name": "backdrop-filter is applied (not \"none\")",
+    "pass": true,
+    "detail": "computed backdrop-filter = \"blur(48px) saturate(2.6)\""
+  },
+  {
+    "name": "--g resolves to a unitless number",
+    "pass": true,
+    "detail": "--g = \"1\" (must be a bare number, not a length)"
+  },
+  {
+    "name": "opacity slider controls fill (blur no longer cancels it)",
+    "pass": true,
+    "detail": "--glass-fill = 0.45 for 透明度 45% (expect 0.45)"
+  },
+  {
+    "name": "wallpaper is sampled & visibly blurred by the glass",
+    "pass": true,
+    "detail": "striping detail: glass 0.3 vs unfiltered 2.1 (must be much lower); mean colour shift 17.1"
+  },
+  {
+    "name": "glass is translucent (wallpaper colour shows through)",
+    "pass": true,
+    "detail": "centre pixel saturation = 0.755 (opaque dark panel would be ~0)"
+  },
+  {
+    "name": "透明度 slider changes the panel monotonically",
+    "pass": true,
+    "detail": "mean luminance at 20/45/70/100% = 72.2 / 72.2 / 55.5 / 35.2"
+  },
+  {
+    "name": "毛玻璃 slider monotonically increases blur",
+    "pass": true,
+    "detail": "striping detail at blur 0/12/24/48 = 2.3 / 2.0 / 0.7 / 0.3 (should fall)"
+  },
+  {
+    "name": "blur 0 / opacity 100 degrades gracefully (no blur, opaque)",
+    "pass": true,
+    "detail": "backdrop=\"blur(0px) saturate(1.1)\", --glass-fill=1 (blur is off and fill is opaque)"
+  },
+  {
+    "name": "calendar reaches the 1300px ceiling",
+    "pass": true,
+    "detail": "logical calendar width = 1300px; visual width after app zoom = 1144px"
+  }
+]

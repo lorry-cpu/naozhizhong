@@ -7,7 +7,7 @@
   --app-border: #e3e9e4;
   --app-primary: #30785f;
   --app-soft: #eaf4ec;
-  --app-font-family: "NaoFangSong", "FangSong", "仿宋", serif;
+  --app-font-family: "NaoSourceHanSerif", "Noto Serif SC", serif;
   font-family: var(--app-font-family);
   color: var(--app-ink);
   background: var(--app-bg);
@@ -20,12 +20,28 @@
 @font-face { font-family: "NaoMinimal"; src: url("/fonts/minimal.ttf") format("truetype"); font-display: swap; }
 @font-face { font-family: "NaoHandwrite"; src: url("/fonts/handwrite.ttf") format("truetype"); font-display: swap; }
 @font-face { font-family: "NaoSourceHanSerif"; src: url("/fonts/source-han-serif.ttf") format("truetype"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "NaoChaozi"; src: url("/fonts/chaozi.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoDunhuang"; src: url("/fonts/dunhuang.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoHefeng"; src: url("/fonts/hefeng.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoYongzi"; src: url("/fonts/yongzi.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoYange"; src: url("/fonts/yange.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoShangshou"; src: url("/fonts/shangshou.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoMengqingjiang"; src: url("/fonts/mengqingjiang.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "NaoTianwangxing"; src: url("/fonts/tianwangxing.ttf") format("truetype"); font-display: swap; }
 :root[data-font="kaiti"] { --app-font-family: "NaoKaiTi", "KaiTi", "楷体", serif; }
 :root[data-font="handbook"] { --app-font-family: "NaoHandbook", "STXingkai", "华文行楷", cursive; }
 :root[data-font="source-han-sans"] { --app-font-family: "NaoSourceHanSans", "Noto Sans SC", sans-serif; }
 :root[data-font="minimal"] { --app-font-family: "NaoMinimal", "DengXian", "等线", sans-serif; }
 :root[data-font="handwrite"] { --app-font-family: "NaoHandwrite", "STLiti", "华文隶书", serif; }
 :root[data-font="source-han-serif"] { --app-font-family: "NaoSourceHanSerif", "Noto Serif SC", serif; }
+:root[data-font="chaozi"] { --app-font-family: "NaoChaozi", cursive; }
+:root[data-font="dunhuang"] { --app-font-family: "NaoDunhuang", serif; }
+:root[data-font="hefeng"] { --app-font-family: "NaoHefeng", cursive; }
+:root[data-font="yongzi"] { --app-font-family: "NaoYongzi", serif; }
+:root[data-font="yange"] { --app-font-family: "NaoYange", cursive; }
+:root[data-font="shangshou"] { --app-font-family: "NaoShangshou", cursive; }
+:root[data-font="mengqingjiang"] { --app-font-family: "NaoMengqingjiang", cursive; }
+:root[data-font="tianwangxing"] { --app-font-family: "NaoTianwangxing", monospace; }
 :root[data-theme="cool"] { --app-bg: #f0f4f8; --app-panel: #fff; --app-panel-rgb: 255, 255, 255; --app-ink: #1e3044; --app-muted: #64758a; --app-border: #e0e8f1; --app-primary: #326ca8; --app-soft: #e9f2fc; }
 :root[data-theme="focus"] { --app-bg: #232626; --app-panel: #303535; --app-panel-rgb: 48, 53, 53; --app-ink: #e8edeb; --app-muted: #b2c0ba; --app-border: #48514e; --app-primary: #8bcaac; --app-soft: #36483e; color-scheme: dark; }
 * { box-sizing: border-box; }
@@ -113,6 +129,14 @@ h2 { font-size: 18px; margin: 0 0 14px; }
 .font-preview-minimal .font-preview { font-family: "NaoMinimal", sans-serif; }
 .font-preview-handwrite .font-preview { font-family: "NaoHandwrite", serif; }
 .font-preview-source-han-serif .font-preview { font-family: "NaoSourceHanSerif", serif; }
+.font-preview-chaozi .font-preview { font-family: "NaoChaozi", cursive; }
+.font-preview-dunhuang .font-preview { font-family: "NaoDunhuang", serif; }
+.font-preview-hefeng .font-preview { font-family: "NaoHefeng", cursive; }
+.font-preview-yongzi .font-preview { font-family: "NaoYongzi", serif; }
+.font-preview-yange .font-preview { font-family: "NaoYange", cursive; }
+.font-preview-shangshou .font-preview { font-family: "NaoShangshou", cursive; }
+.font-preview-mengqingjiang .font-preview { font-family: "NaoMengqingjiang", cursive; }
+.font-preview-tianwangxing .font-preview { font-family: "NaoTianwangxing", monospace; }
 .history-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--app-border); }
 .history-row span { overflow-wrap: anywhere; }
 .memo-record { display: grid; grid-template-columns: 120px minmax(0, 1fr); width: 100%; text-align: left; gap: 14px; border: 0; border-top: 1px solid var(--app-border); background: transparent; color: var(--app-ink); padding: 13px 0; }
@@ -666,7 +690,15 @@ button:disabled { cursor: default; opacity: .65; }
   border-radius: 12px;
   background: none;
 }
-.home-layout { grid-template-columns: minmax(280px, .9fr) minmax(0, 1.65fr); gap: 20px; align-items: start; }
+/* 右侧 2×2 整体右移 8px：左列按比例收窄 8px，右列相应变宽 8px，
+   两列合计与 gap 不变，所以版心宽度不动、右外沿仍与今日计划卡片齐平。 */
+.home-layout {
+  grid-template-columns:
+    minmax(280px, calc((100% - var(--home-layout-gap, 20px)) * .9 / 2.55 - 8px))
+    minmax(0, 1fr);
+  gap: var(--home-layout-gap, 20px);
+  align-items: start;
+}
 .home-notes { grid-template-rows: auto auto; align-content: start; gap: 16px; }
 .home-art {
   flex: none;
@@ -807,7 +839,9 @@ button:disabled { cursor: default; opacity: .65; }
   flex-direction: column;
   width: min(62%, 255px);
   min-width: 0;
-  min-height: 284px;
+  /* 不再写死高度：随卡片一起收缩，只留出内边距，
+     这样加大卡片间距时不会反过来把整列顶高。 */
+  min-height: 0;
   padding: 21px 16px 16px;
   border: 1px solid rgba(255, 255, 255, .2);
   border-radius: 12px;
@@ -820,7 +854,8 @@ button:disabled { cursor: default; opacity: .65; }
 }
 .home-note-ball .home-sport-copy {
   width: min(65%, 265px);
-  padding: 92px 16px 16px;
+  /* 顶部留白决定文字落点：比原来上移 10px，让整块文字落在更干净的草坡上。 */
+  padding: 82px 16px 16px;
   color: #fffdf5;
   border: 0;
   border-radius: 0;
@@ -866,7 +901,9 @@ button:disabled { cursor: default; opacity: .65; }
   .home-sheet.home-note-food,
   .home-sheet.home-note-ball { min-height: 292px; padding: 11px; }
   .home-note-food .home-food-copy { min-height: 268px; padding: 17px 13px 13px; }
-  .home-note-ball .home-sport-copy { min-height: 268px; padding: 82px 13px 13px; }
+  /* 窄屏卡片更矮、天空线位置相同，可上移的余量更小：
+     与桌面同样是「上移」，但只收到 80px，避免标题贴到蓝天。 */
+  .home-note-ball .home-sport-copy { min-height: 268px; padding: 80px 13px 13px; }
 }
 
 /* 首页备忘录：叠放的撕边信纸、横线和铜色回形针。 */
@@ -874,9 +911,11 @@ button:disabled { cursor: default; opacity: .65; }
   position: relative;
   isolation: isolate;
   overflow: visible;
-  display: block;
+  /* flex 列：让撕边信纸撑满卡片高度，与右侧另外三张保持同高。 */
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  padding: 17px 16px 20px 12px;
+  padding: 14px 16px 16px 12px;
   border: 0;
   border-radius: 0;
   background: none;
@@ -912,9 +951,12 @@ button:disabled { cursor: default; opacity: .65; }
   position: relative;
   z-index: 1;
   display: flex;
+  flex: 1;
   flex-direction: column;
-  min-height: 273px;
-  padding: 27px 32px 22px 30px;
+  /* 跟随卡片高度伸缩，不写死：这样调整右侧卡片间距时，
+     备忘录不会反过来顶高整列、破坏与今日计划的对齐。 */
+  min-height: 0;
+  padding: 22px 32px 18px 30px;
   background: linear-gradient(145deg, #f7f1dc, #f0e7c8 82%);
   color: #4c302b;
   clip-path: polygon(0 2%, 2% 1%, 5% 2%, 9% 1%, 14% 2%, 20% 1%, 26% 2%, 32% 1%, 39% 2%, 45% 1%, 52% 2%, 61% 1%, 70% 2%, 79% 1%, 87% 2%, 94% 1%, 100% 2%, 99% 12%, 100% 25%, 99% 39%, 100% 54%, 99% 69%, 100% 84%, 99% 98%, 93% 99%, 86% 98%, 78% 99%, 70% 98%, 62% 99%, 54% 98%, 46% 99%, 38% 98%, 30% 99%, 22% 98%, 15% 99%, 8% 98%, 1% 99%, 2% 84%, 1% 68%, 2% 50%, 1% 32%);
@@ -954,7 +996,9 @@ button:disabled { cursor: default; opacity: .65; }
   display: block;
   flex: 1;
   width: 100%;
-  min-height: 145px;
+  /* 备忘录卡片与右侧另外三张同高；间距拉大后卡片变矮，
+     书写区下限随之收一点（flex:1 会继续吃掉多余空间，不影响大屏书写）。 */
+  min-height: 112px;
   margin-top: 15px;
   padding: 0 4px;
   border: 0;
@@ -1019,8 +1063,11 @@ button:disabled { cursor: default; opacity: .65; }
   .home-memo textarea { min-height: 139px; }
 }
 
-/* 游戏娱乐：使用用户提供的插画背景，文字落在左侧留白区域。 */
+/* 游戏娱乐：使用用户提供的插画背景，文字落在左侧留白区域。
+   文字统一取插画自身的靛蓝（地毯与沙发的 #343D5C 加深一档），
+   与画面同一色系，且在奶油底色上保持足够对比度。 */
 .home-sheet.home-note-fun {
+  --fun-ink: #2C3557;
   display: flex;
   align-items: stretch;
   min-height: 314px;
@@ -1048,9 +1095,9 @@ button:disabled { cursor: default; opacity: .65; }
   flex-direction: column;
   width: min(60%, 270px);
   min-width: 0;
-  min-height: 284px;
+  min-height: 0;
   padding: 24px 18px 16px;
-  color: #24211e;
+  color: var(--fun-ink);
   background: none;
   border: 0;
   border-radius: 0;
@@ -1058,7 +1105,7 @@ button:disabled { cursor: default; opacity: .65; }
 }
 .home-note-fun .home-poster-title {
   margin: 0 0 22px;
-  color: #24211e;
+  color: var(--fun-ink);
   font-size: clamp(22px, 2.1vw, 27px);
   font-weight: 700;
   letter-spacing: .05em;
@@ -1068,31 +1115,42 @@ button:disabled { cursor: default; opacity: .65; }
 .home-note-fun .home-note-body .home-line { line-height: 1.7; }
 .home-note-fun .home-note-empty,
 .home-note-fun .home-note-body .home-line strong,
-.home-note-fun .home-note-body .muted-small { color: #24211e; }
+.home-note-fun .home-note-body .muted-small { color: var(--fun-ink); }
+/* 次要信息（实际时长）用同色系的浅一档，保留层级又不跳出这套配色。 */
+.home-note-fun .home-note-body .muted-small { color: rgba(44, 53, 87, .76); }
 .home .home-note-fun .button-link {
   align-self: flex-start;
   margin-top: auto;
   padding: 5px 0;
-  color: #fffdf5;
+  color: var(--fun-ink);
   font-size: 14px;
   line-height: 1.4;
   text-underline-offset: 4px;
 }
-.home .home-note-fun .button-link:focus-visible { outline-color: #fffdf5; }
+.home .home-note-fun .button-link:focus-visible { outline-color: var(--fun-ink); }
 @media (max-width: 620px) {
   .home-sheet.home-note-fun { min-height: 292px; padding: 11px; }
   .home-note-fun .home-fun-copy { min-height: 268px; width: min(64%, 280px); padding: 20px 13px 13px; }
 }
-/* 桌面端四张摘要卡片保持同尺寸，并让今日计划与右侧 2×2 卡片总高度对齐。 */
+/* 桌面端四张摘要卡片保持同尺寸，并让今日计划与右侧 2×2 卡片总高度对齐。
+   右侧四张卡片一起缩小：网格仍铺满右侧整列，靠更大的行／列间距把卡片本身做小，
+   因此四张卡片的外沿依旧与左侧今日计划卡片上下、左右齐平，只是卡片之间留白更宽。
+   行高下限要低于「今日计划 600px 分两行后的高度」，否则下限会顶住整列、
+   卡片不再变小、布局反而被撑高。 */
 @media (min-width: 901px) {
   .home-layout { align-items: stretch; }
   .home-col-side,
   .home-notes { height: 100%; }
   .home-notes {
-    grid-template-rows: repeat(2, minmax(314px, 1fr));
-    gap: calc(16px / var(--ui-scale));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: var(--home-note-gap-y, 48px) var(--home-note-gap-x, 48px);
   }
-  .home-note { min-height: 314px; height: 100%; }
+  .home-note { min-height: 0; height: 100%; }
+  /* 这三张卡片的基础规则里写死了 314px 下限，选择器权重高于 .home-note，
+     桌面端必须一并归零，否则下限会顶住整列、卡片不再随间距缩小。 */
+  .home-sheet.home-note-food,
+  .home-sheet.home-note-ball,
+  .home-sheet.home-note-fun { min-height: 0; }
 }
 
 /* ===== 今日计划：参考图的半透明日历 ===== */
@@ -1103,9 +1161,11 @@ button:disabled { cursor: default; opacity: .65; }
   --tasks-line: rgba(255, 255, 255, .15);
   --tasks-surface: rgba(19, 24, 34, .58);
   --tasks-surface-strong: rgba(28, 33, 45, .82);
+  --task-calendar-text-scale: 1;
   width: min(var(--task-calendar-width), 100%);
   margin: 0 auto;
   color: var(--tasks-ink);
+  font-size: calc(16px * var(--task-calendar-text-scale));
   zoom: var(--task-calendar-scale);
   transform-origin: top center;
 }
@@ -1116,6 +1176,18 @@ button:disabled { cursor: default; opacity: .65; }
   --tasks-line: rgba(31, 41, 55, .18);
   --tasks-surface: rgba(255, 255, 255, .57);
   --tasks-surface-strong: rgba(249, 250, 252, .82);
+}
+.tasks-page.tasks-text-warm {
+  --tasks-ink: #f7d59a;
+  --tasks-muted: rgba(247, 213, 154, .68);
+  --tasks-dim: rgba(247, 213, 154, .42);
+  --tasks-line: rgba(247, 213, 154, .2);
+}
+.tasks-page.tasks-text-cool {
+  --tasks-ink: #a8ddff;
+  --tasks-muted: rgba(168, 221, 255, .68);
+  --tasks-dim: rgba(168, 221, 255, .42);
+  --tasks-line: rgba(168, 221, 255, .2);
 }
 .tasks-accessible-heading {
   position: absolute;
@@ -1235,7 +1307,7 @@ button:disabled { cursor: default; opacity: .65; }
 .tasks-calendar-title h2 {
   margin: 0;
   color: var(--tasks-ink);
-  font-size: clamp(26px, 3vw, 40px);
+  font-size: clamp(calc(26px * var(--task-calendar-text-scale)), calc(3vw * var(--task-calendar-text-scale)), calc(40px * var(--task-calendar-text-scale)));
   font-weight: 700;
   letter-spacing: .01em;
   line-height: 1.05;
@@ -1244,7 +1316,7 @@ button:disabled { cursor: default; opacity: .65; }
 .tasks-calendar-title p {
   margin: 8px 0 0;
   color: var(--tasks-muted);
-  font-size: 14px;
+  font-size: calc(14px * var(--task-calendar-text-scale));
   white-space: nowrap;
 }
 .tasks-round-button,
@@ -1270,7 +1342,7 @@ button:disabled { cursor: default; opacity: .65; }
   height: 39px;
   flex: 0 0 39px;
   border-radius: 50%;
-  font-size: 21px;
+  font-size: calc(21px * var(--task-calendar-text-scale));
   line-height: 1;
 }
 .tasks-calendar-actions { justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
@@ -1311,11 +1383,11 @@ button:disabled { cursor: default; opacity: .65; }
   font-weight: 700;
 }
 .tasks-add-button { padding: 7px 14px; }
-.tasks-add-button span { margin-right: 5px; font-size: 19px; }
+.tasks-add-button span { margin-right: 5px; font-size: calc(19px * var(--task-calendar-text-scale)); }
 .tasks-settings-button {
   width: 39px;
   padding: 6px;
-  font-size: 18px;
+  font-size: calc(18px * var(--task-calendar-text-scale));
 }
 .tasks-date-input {
   width: 37px;
@@ -1347,7 +1419,7 @@ button:disabled { cursor: default; opacity: .65; }
   align-items: end;
   padding: 11px 8px 8px;
   color: var(--tasks-muted);
-  font-size: 13px;
+  font-size: calc(13px * var(--task-calendar-text-scale));
   font-weight: 700;
   text-align: center;
 }
@@ -1405,8 +1477,8 @@ button:disabled { cursor: default; opacity: .65; }
   gap: 7px;
   color: var(--tasks-ink);
 }
-.tasks-cell-date strong { font-size: 17px; line-height: 1; }
-.tasks-cell-date small { color: var(--tasks-dim); font-size: 11px; }
+.tasks-cell-date strong { font-size: calc(17px * var(--task-calendar-text-scale)); line-height: 1; }
+.tasks-cell-date small { color: var(--tasks-dim); font-size: calc(11px * var(--task-calendar-text-scale)); }
 .tasks-cell-items {
   display: grid;
   gap: 4px;
@@ -1415,7 +1487,7 @@ button:disabled { cursor: default; opacity: .65; }
 .tasks-cell-items > span { display: block; min-width: 0; }
 .tasks-more {
   color: var(--tasks-muted);
-  font-size: 11px;
+  font-size: calc(11px * var(--task-calendar-text-scale));
   text-align: center;
 }
 .task-calendar-chip {
@@ -1437,7 +1509,7 @@ button:disabled { cursor: default; opacity: .65; }
 .task-calendar-chip.compact {
   padding: 3px 5px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: calc(11px * var(--task-calendar-text-scale));
 }
 .task-calendar-chip.settled { opacity: .52; text-decoration: line-through; }
 .task-calendar-chip span:not(.task-chip-check) {
@@ -1449,13 +1521,13 @@ button:disabled { cursor: default; opacity: .65; }
 .task-chip-check {
   flex: 0 0 auto;
   color: var(--task-accent, #75c4f2);
-  font-size: 14px;
+  font-size: calc(14px * var(--task-calendar-text-scale));
   line-height: 1;
 }
 .task-calendar-chip small {
   margin-left: auto;
   color: var(--tasks-muted);
-  font-size: 10px;
+  font-size: calc(10px * var(--task-calendar-text-scale));
 }
 .tasks-week-view { padding-top: 8px; }
 .tasks-week-grid { gap: 8px; min-height: 530px; }
@@ -1478,7 +1550,7 @@ button:disabled { cursor: default; opacity: .65; }
   color: var(--tasks-muted);
   background: transparent;
 }
-.tasks-week-heading strong { color: var(--tasks-ink); font-size: 22px; }
+.tasks-week-heading strong { color: var(--tasks-ink); font-size: calc(22px * var(--task-calendar-text-scale)); }
 .tasks-week-column.today .tasks-week-heading strong { color: #f5be48; }
 .tasks-week-items { display: grid; gap: 7px; }
 .tasks-week-items .task-calendar-chip { min-height: 42px; align-items: flex-start; }
@@ -1491,14 +1563,14 @@ button:disabled { cursor: default; opacity: .65; }
 }
 .tasks-day-number {
   color: var(--tasks-ink);
-  font-size: 56px;
+  font-size: calc(56px * var(--task-calendar-text-scale));
   font-weight: 300;
   line-height: .9;
 }
 .tasks-day-heading strong,
 .tasks-day-heading span { display: block; }
-.tasks-day-heading strong { font-size: 19px; }
-.tasks-day-heading span { margin-top: 4px; color: var(--tasks-muted); font-size: 13px; }
+.tasks-day-heading strong { font-size: calc(19px * var(--task-calendar-text-scale)); }
+.tasks-day-heading span { margin-top: 4px; color: var(--tasks-muted); font-size: calc(13px * var(--task-calendar-text-scale)); }
 .tasks-day-list { display: grid; gap: 9px; }
 .tasks-day-row {
   display: grid;
@@ -1523,16 +1595,16 @@ button:disabled { cursor: default; opacity: .65; }
   border-radius: 50%;
   color: var(--task-accent, #75c4f2);
   background: transparent;
-  font-size: 15px;
+  font-size: calc(15px * var(--task-calendar-text-scale));
 }
 .tasks-day-row.settled .task-row-check { background: var(--task-accent, #75c4f2); color: #1d2731; }
 .tasks-day-row-main { min-width: 0; }
 .tasks-day-row-main strong,
 .tasks-day-row-main small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tasks-day-row-main strong { font-size: 16px; }
-.tasks-day-row-main small { margin-top: 4px; color: var(--tasks-muted); font-size: 12px; }
-.tasks-day-row time { color: var(--tasks-muted); font-size: 14px; white-space: nowrap; }
-.task-difficulty-label { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.tasks-day-row-main strong { font-size: calc(16px * var(--task-calendar-text-scale)); }
+.tasks-day-row-main small { margin-top: 4px; color: var(--tasks-muted); font-size: calc(12px * var(--task-calendar-text-scale)); }
+.tasks-day-row time { color: var(--tasks-muted); font-size: calc(14px * var(--task-calendar-text-scale)); white-space: nowrap; }
+.task-difficulty-label { font-size: calc(13px * var(--task-calendar-text-scale)); font-weight: 700; white-space: nowrap; }
 .tasks-row-actions { justify-content: flex-end; gap: 5px; flex-wrap: wrap; }
 .tasks-page .button-primary,
 .tasks-page .button-secondary,
@@ -1540,7 +1612,7 @@ button:disabled { cursor: default; opacity: .65; }
 .tasks-page .icon-button { border-radius: 9px; }
 .tasks-page .button-primary { padding: 7px 11px; }
 .tasks-page .button-secondary { padding: 7px 10px; color: var(--tasks-ink); border-color: var(--tasks-line); background: rgba(255, 255, 255, .09); }
-.tasks-page .button-link { padding: 3px 4px; color: #f4c35e; font-size: 12px; }
+.tasks-page .button-link { padding: 3px 4px; color: #f4c35e; font-size: calc(12px * var(--task-calendar-text-scale)); }
 .tasks-page .icon-button {
   width: 30px;
   height: 30px;
@@ -1567,12 +1639,12 @@ button:disabled { cursor: default; opacity: .65; }
 .task-dialog .dialog-header,
 .task-settings-dialog .dialog-header { margin-bottom: 20px; }
 .task-dialog h2,
-.task-settings-dialog h2 { color: var(--tasks-ink); font-size: 23px; }
+.task-settings-dialog h2 { color: var(--tasks-ink); font-size: calc(23px * var(--task-calendar-text-scale)); }
 .task-dialog .muted-small,
 .task-settings-dialog .muted-small { color: var(--tasks-muted); }
 .task-form { display: grid; gap: 16px; }
 .task-form label,
-.task-settings-dialog label { color: var(--tasks-muted); font-size: 13px; font-weight: 700; }
+.task-settings-dialog label { color: var(--tasks-muted); font-size: calc(13px * var(--task-calendar-text-scale)); font-weight: 700; }
 .task-form label { width: auto; margin: 0; }
 .task-form input,
 .task-form select,
@@ -1596,10 +1668,10 @@ button:disabled { cursor: default; opacity: .65; }
 .task-form-detail-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .task-form-detail-grid label { min-width: 0; }
 .task-form-wide { grid-column: 1 / -1; }
-.task-reward-preview { margin: 12px 0 0; color: var(--tasks-muted); font-size: 13px; }
+.task-reward-preview { margin: 12px 0 0; color: var(--tasks-muted); font-size: calc(13px * var(--task-calendar-text-scale)); }
 .task-reward-preview strong { margin-left: 4px; color: #f5c35d; }
 .task-setting-section { margin-top: 17px; padding-top: 16px; border-top: 1px solid var(--tasks-line); }
-.task-setting-section h3 { margin: 0 0 14px; color: var(--tasks-muted); font-size: 14px; letter-spacing: .08em; }
+.task-setting-section h3 { margin: 0 0 14px; color: var(--tasks-muted); font-size: calc(14px * var(--task-calendar-text-scale)); letter-spacing: .08em; }
 .task-setting-section label {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1608,7 +1680,7 @@ button:disabled { cursor: default; opacity: .65; }
   margin: 13px 0;
 }
 .task-setting-section label input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: #f5be48; }
-.task-setting-section output { color: var(--tasks-ink); font-size: 13px; }
+.task-setting-section output { color: var(--tasks-ink); font-size: calc(13px * var(--task-calendar-text-scale)); }
 .task-text-tone { gap: 8px; flex-wrap: wrap; color: var(--tasks-muted); }
 .task-text-tone span { margin-right: auto; }
 .task-text-tone button {
@@ -1621,7 +1693,7 @@ button:disabled { cursor: default; opacity: .65; }
 .task-text-tone button.active { color: #242b37; background: #f6f7f9; }
 .task-checkbox { display: flex !important; grid-template-columns: none !important; justify-content: flex-start; align-items: center !important; gap: 9px !important; }
 .task-checkbox input { width: 18px; height: 18px; accent-color: #f5be48; }
-.task-checkbox span { color: var(--tasks-ink); font-size: 14px; font-weight: 400; }
+.task-checkbox span { color: var(--tasks-ink); font-size: calc(14px * var(--task-calendar-text-scale)); font-weight: 400; }
 .task-export-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .task-export-actions button {
   padding: 8px 13px;
@@ -1645,8 +1717,8 @@ button:disabled { cursor: default; opacity: .65; }
 }
 @media (max-width: 560px) {
   .tasks-calendar-toolbar { min-height: 122px; }
-  .tasks-calendar-title h2 { font-size: 28px; }
-  .tasks-calendar-title p { font-size: 12px; }
+  .tasks-calendar-title h2 { font-size: calc(28px * var(--task-calendar-text-scale)); }
+  .tasks-calendar-title p { font-size: calc(12px * var(--task-calendar-text-scale)); }
   .tasks-calendar-actions { gap: 6px; }
   .tasks-view-switch button { min-width: 37px; padding: 4px 9px; }
   .tasks-add-button { padding-inline: 10px; }
@@ -1748,22 +1820,22 @@ button:disabled { cursor: default; opacity: .65; }
 }
 .life-stat-strip span {
   color: var(--tasks-muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--task-calendar-text-scale));
 }
 .life-stat-strip strong {
   margin-top: 6px;
   color: var(--tasks-ink);
-  font-size: 21px;
+  font-size: calc(21px * var(--task-calendar-text-scale));
 }
 .life-stat-strip small {
   margin-top: 5px;
   color: var(--tasks-dim);
-  font-size: 11px;
+  font-size: calc(11px * var(--task-calendar-text-scale));
 }
 .life-summary-line {
   margin: 12px 0 0;
   color: var(--tasks-muted);
-  font-size: 13px;
+  font-size: calc(13px * var(--task-calendar-text-scale));
   text-align: right;
 }
 .life-editor-section,
@@ -1785,12 +1857,12 @@ button:disabled { cursor: default; opacity: .65; }
 .life-section-heading h3 {
   margin: 0;
   color: var(--tasks-ink);
-  font-size: 17px;
+  font-size: calc(17px * var(--task-calendar-text-scale));
 }
 .life-section-heading p {
   margin: 5px 0 0;
   color: var(--tasks-muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--task-calendar-text-scale));
 }
 .life-section-mark {
   display: inline-grid;
@@ -1881,12 +1953,12 @@ button:disabled { cursor: default; opacity: .65; }
 }
 .life-record-card strong {
   color: var(--tasks-ink);
-  font-size: 14px;
+  font-size: calc(14px * var(--task-calendar-text-scale));
 }
 .life-record-card span {
   margin-top: 5px;
   color: var(--tasks-muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--task-calendar-text-scale));
   line-height: 1.65;
 }
 .life-record-card .button-row {

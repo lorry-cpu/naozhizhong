@@ -74,7 +74,7 @@ export function SettingsPage({ health, theme, unlocked, onTheme, font, unlockedF
         {FONTS.map(item => <option key={item.id} value={item.id} disabled={!unlockedFonts.includes(item.id)}>
           {item.name}{unlockedFonts.includes(item.id) ? '' : '（请到金币与风格购买）'}</option>)}
       </select>
-      <p className="muted-small">字体可以在“金币与风格”页面预览；仿宋体免费，其余字体每种 200 金币。</p>
+      <p className="muted-small">字体可以在“金币与风格”页面预览；思源宋体免费，其余字体每种 200 金币。</p>
     </section>
     <section className="panel"><h2>全部记录汇总</h2>
       <p>计划：{tasks.length} 条，已结算 {tasks.filter(t => t.status === 'settled').length} 条，累计计时 {Math.floor(timers.reduce((sum, t) => sum + elapsedMs(t), 0) / 60000)} 分钟</p>

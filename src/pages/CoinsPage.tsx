@@ -17,14 +17,14 @@ export function CoinsPage({ current, onTheme, currentFont, unlockedFonts, onFont
     try {
       const [coins, history, cool, focus, ...fontSettings] = await Promise.all([
         balance(), all('ledger'), byId('settings', 'unlocked:cool'), byId('settings', 'unlocked:focus'),
-        ...FONTS.filter(item => item.id !== 'fangsong').map(item => byId('settings', `unlocked:font:${item.id}`)),
+        ...FONTS.filter(item => item.id !== 'source-han-serif').map(item => byId('settings', `unlocked:font:${item.id}`)),
       ])
       setTotal(coins)
       setEntries(history.sort((a, b) => b.at - a.at))
       setUnlocked(['warm', ...(cool?.value === true ? ['cool' as const] : []), ...(focus?.value === true ? ['focus' as const] : [])])
       setLocalUnlockedFonts([
-        'fangsong',
-        ...FONTS.filter(item => item.id !== 'fangsong')
+        'source-han-serif',
+        ...FONTS.filter(item => item.id !== 'source-han-serif')
           .filter((_, index) => fontSettings[index]?.value === true)
           .map(item => item.id),
       ])
@@ -66,7 +66,7 @@ export function CoinsPage({ current, onTheme, currentFont, unlockedFonts, onFont
       </div>)}</div>
     </section>
     <section className="panel"><h2>字体商店</h2>
-      <p className="subtitle">仿宋体默认免费，其余字体每种 200 金币。点击卡片中的文字可以先预览。</p>
+      <p className="subtitle">思源宋体默认免费，其余字体每种 200 金币。点击卡片中的文字可以先预览。</p>
       <div className="card-grid">{FONTS.map(item => {
         const isUnlocked = localUnlockedFonts.includes(item.id)
         return <div className={`summary-card font-card font-preview-${item.id}`} data-testid={`font-card-${item.id}`} key={item.id}>

@@ -23,7 +23,7 @@ async function records(page, table) {
   }, table)
 }
 
-test('字体默认仿宋，字体可预览、以 200 金币购买并持久化', async () => {
+test('字体默认思源宋体，字体可预览、以 200 金币购买并持久化', async () => {
   const profile = await mkdtemp(path.join(tmpdir(), 'rhythm-stage13-'))
   const server = spawn(process.execPath, ['launcher/serve.cjs', '--no-open'])
   let context
@@ -44,12 +44,17 @@ test('字体默认仿宋，字体可预览、以 200 金币购买并持久化', 
     await page.getByRole('navigation').getByRole('button', { name: '金币与风格' }).click()
     await page.getByRole('heading', { name: '字体商店' }).waitFor()
 
-    assert.equal(await page.locator('[data-testid^="font-card-"]').count(), 7)
-    assert.equal(await page.locator('[data-testid="font-card-fangsong"] .font-preview').count(), 1)
+    assert.equal(await page.locator('[data-testid^="font-card-"]').count(), 15)
+    assert.equal(await page.locator('[data-testid="font-card-source-han-serif"] .font-preview').count(), 1)
     assert.equal(await page.locator('[data-testid="font-card-kaiti"]').innerText().then(text => /200 金币/.test(text)), true)
-    assert.equal(await page.evaluate(() => document.documentElement.dataset.font), 'fangsong')
-    assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).fontFamily.includes('NaoFangSong')), true)
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.font), 'source-han-serif')
+    assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).fontFamily.includes('NaoSourceHanSerif')), true)
+    assert.equal(await page.evaluate(async () => (await fetch('/fonts/source-han-serif.ttf')).ok), true)
     assert.equal(await page.evaluate(async () => (await fetch('/fonts/kaiti.ttf')).ok), true)
+    for (const id of ['chaozi', 'dunhuang', 'hefeng', 'yongzi', 'yange', 'shangshou', 'mengqingjiang', 'tianwangxing']) {
+      assert.equal(await page.evaluate(async fontId => (await fetch(`/fonts/${fontId}.ttf`)).ok, id), true)
+      assert.equal(await page.locator(`[data-testid="font-card-${id}"] .font-preview`).count(), 1)
+    }
 
     await page.evaluate(async () => {
       const db = await new Promise((resolve, reject) => {
