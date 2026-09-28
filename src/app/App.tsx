@@ -11,6 +11,7 @@ import { HomePage } from '../pages/HomePage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { MemoPage } from '../pages/MemoPage'
 import { WallpaperDialog } from '../components/WallpaperDialog'
+import { PlanArtDialog, defaultPlanArt, normalizePlanArt } from '../components/PlanArtDialog'
 import { AppIcon } from '../components/AppIcon'
 
 export const pages = [
@@ -51,6 +52,9 @@ export function App() {
   const [wallpaperOpacity, setWallpaperOpacity] = useState(0.35)
   const [wallpaperOpen, setWallpaperOpen] = useState(false)
   const [wallpaperMessage, setWallpaperMessage] = useState('')
+  const [planArt, setPlanArt] = useState(defaultPlanArt)
+  const [planArtOpen, setPlanArtOpen] = useState(false)
+  const [planArtMessage, setPlanArtMessage] = useState('')
 
   useEffect(() => {
     const memoKey = `memo:${localDateKey(new Date())}`
@@ -100,6 +104,15 @@ export function App() {
     }
     loadWallpaper()
     return watchChanges(loadWallpaper)
+  }, [])
+  useEffect(() => {
+    const loadPlanArt = () => {
+      void setting('homePlanArt')
+        .then(saved => setPlanArt(normalizePlanArt(saved)))
+        .catch(error => setPlanArtMessage(`读取首页插画失败：${String(error)}`))
+    }
+    loadPlanArt()
+    return watchChanges(loadPlanArt)
   }, [])
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
   useEffect(() => { document.documentElement.dataset.font = font }, [font])
@@ -199,6 +212,38 @@ export function App() {
       setWallpaperMessage(`壁纸清除失败：${String(error)}`)
     }
   }
+  async function choosePlanArt(src: string) {
+    try {
+      await saveSetting('homePlanArt', src)
+      setPlanArt(src)
+      setPlanArtMessage('已更换插画')
+    } catch (error) {
+      setPlanArtMessage(`插画保存失败：${String(error)}`)
+    }
+  }
+  async function importPlanArt(file: File) {
+    if (!file.type.startsWith('image/')) {
+      setPlanArtMessage('请选择图片文件')
+      return
+    }
+    try {
+      const dataUrl = await readAsDataUrl(file)
+      await saveSetting('homePlanArt', dataUrl)
+      setPlanArt(dataUrl)
+      setPlanArtMessage('图片已保存到本机')
+    } catch (error) {
+      setPlanArtMessage(`图片保存失败：${String(error)}`)
+    }
+  }
+  async function resetPlanArt() {
+    try {
+      await saveSetting('homePlanArt', defaultPlanArt)
+      setPlanArt(defaultPlanArt)
+      setPlanArtMessage('已恢复默认插画')
+    } catch (error) {
+      setPlanArtMessage(`恢复失败：${String(error)}`)
+    }
+  }
   const appStyle = {
     '--app-wallpaper': wallpaper ? `url("${wallpaper}")` : 'none',
     '--app-wallpaper-opacity': String(wallpaperOpacity),
@@ -233,7 +278,8 @@ export function App() {
             <AppIcon name="clock" /><span>返回总览</span>
           </button>
         </div>}
-        {page === 'home' ? <HomePage memo={memo} onMemo={updateMemo} onSave={() => void persistMemo()} navigate={setPage} />
+        {page === 'home' ? <HomePage memo={memo} onMemo={updateMemo} onSave={() => void persistMemo()} navigate={setPage}
+            planArt={planArt} onPickPlanArt={() => { setPlanArtMessage(''); setPlanArtOpen(true) }} />
           : page === 'memo' ? <MemoPage />
           : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)}
             font={font} unlockedFonts={unlockedFonts} onFont={next => void changeFont(next)} />
@@ -247,6 +293,11 @@ export function App() {
         onImport={file => void importWallpaper(file)}
         onOpacityChange={value => void updateWallpaperOpacity(value)}
         onClear={() => void clearWallpaper()} />
+      <PlanArtDialog open={planArtOpen} current={planArt} message={planArtMessage}
+        onClose={() => setPlanArtOpen(false)}
+        onSelect={src => void choosePlanArt(src)}
+        onImport={file => void importPlanArt(file)}
+        onReset={() => void resetPlanArt()} />
     </div>
   )
 }

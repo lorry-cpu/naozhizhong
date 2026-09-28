@@ -9,9 +9,10 @@ import { AppIcon } from '../components/AppIcon'
 const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 const two = (value: number) => String(value).padStart(2, '0')
 
-export function HomePage({ memo, onMemo, onSave, navigate }: {
+export function HomePage({ memo, onMemo, onSave, navigate, planArt, onPickPlanArt }: {
   memo: string; onMemo: (text: string) => void; onSave: () => void
   navigate: (page: PageId) => void
+  planArt: string; onPickPlanArt: () => void
 }) {
   const [tasks, setTasks] = useState<TaskInstance[]>([])
   const [meals, setMeals] = useState<Meal[]>([])
@@ -55,7 +56,13 @@ export function HomePage({ memo, onMemo, onSave, navigate }: {
 
     <div className="home-layout">
       <section className="home-sheet home-plan">
-        <div className="home-art" aria-hidden="true"><img src="/cards/plan-poster.jpg" alt="" /></div>
+        <div className="home-art">
+          <img src={planArt} alt="" />
+          <button type="button" className="home-art-switch" onClick={onPickPlanArt}
+            aria-label="更换今日计划插画" title="更换插画">
+            <AppIcon name="wallpaper" />
+          </button>
+        </div>
         <div className="home-sheet-head"><h2><span className="home-heading-icon"><AppIcon name="tasks" /></span>今日计划</h2>
           <span className="home-head-note">{done} / {total} 项已结算</span></div>
         <div className="home-plan-body">

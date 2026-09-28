@@ -30,6 +30,55 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
     assert.equal((await page.request.get(`${origin}/cards/plan-poster.jpg`)).ok(), true, 'plan-poster.jpg 可读取')
     assert.equal(await planImage.evaluate(img => img.complete && img.naturalWidth > 0), true, '计划插画可以加载')
 
+    // 插画右下角的切换按钮：可打开弹窗、切换内置插画、刷新后仍保留、可恢复默认。
+    const artSwitch = page.locator('.home-art-switch')
+    assert.equal(await artSwitch.count(), 1, '今日计划插画带切换按钮')
+    assert.equal(await artSwitch.getAttribute('aria-label'), '更换今日计划插画', '切换按钮有无障碍名称')
+    const artBox = await page.evaluate(() => {
+      const art = document.querySelector('.home-plan .home-art').getBoundingClientRect()
+      const btn = document.querySelector('.home-art-switch').getBoundingClientRect()
+      return { insideRight: art.right - btn.right, insideBottom: art.bottom - btn.bottom, w: btn.width, h: btn.height }
+    })
+    assert.ok(artBox.insideRight >= 0 && artBox.insideBottom >= 0, '切换按钮位于插画内部')
+    assert.ok(artBox.w >= 24 && artBox.h >= 24, `切换按钮是可点击尺寸（${artBox.w.toFixed(0)}×${artBox.h.toFixed(0)}）`)
+
+    await artSwitch.click()
+    await page.getByRole('dialog').waitFor()
+    assert.equal(await page.locator('#plan-art-dialog-title').textContent(), '选择首页插画')
+    assert.equal(await page.locator('.plan-art-option').count(), 2, '提供两张内置插画')
+    await page.locator('.plan-art-option').nth(1).click()
+    await page.getByRole('button', { name: '完成' }).click()
+    await page.waitForFunction(() => document.querySelector('.home-plan .home-art img')?.getAttribute('src') === '/cards/plan.svg')
+    assert.equal(await planImage.getAttribute('src'), '/cards/plan.svg', '切换到第二张内置插画')
+    await page.reload()
+    await page.waitForFunction(() => document.querySelector('.home-plan .home-art img')?.getAttribute('src') === '/cards/plan.svg')
+    assert.equal(await planImage.getAttribute('src'), '/cards/plan.svg', '插画选择在刷新后保留')
+    await page.locator('.home-art-switch').click()
+    await page.getByRole('button', { name: '恢复默认插画' }).click()
+    await page.waitForFunction(() => document.querySelector('.home-plan .home-art img')?.getAttribute('src') === '/cards/plan-poster.jpg')
+    assert.equal(await planImage.getAttribute('src'), '/cards/plan-poster.jpg', '可以恢复默认插画')
+    await page.getByRole('button', { name: '完成' }).click()
+
+    // 导入本地图片：存成 DataURL，刷新后仍生效。
+    await page.locator('.home-art-switch').click()
+    await page.locator('#plan-art-file').setInputFiles({
+      name: 'custom.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        'base64',
+      ),
+    })
+    await page.waitForFunction(() => document.querySelector('.home-plan .home-art img')?.getAttribute('src')?.startsWith('data:image/png;base64,'))
+    assert.match(await planImage.getAttribute('src'), /^data:image\/png;base64,/, '导入的本地图片成为卡片插画')
+    await page.reload()
+    await page.waitForFunction(() => document.querySelector('.home-plan .home-art img')?.getAttribute('src')?.startsWith('data:image/png;base64,'))
+    assert.equal(await planImage.evaluate(img => img.complete && img.naturalWidth > 0), true, '导入的图片刷新后仍能加载')
+    await page.locator('.home-art-switch').click()
+    await page.getByRole('button', { name: '恢复默认插画' }).click()
+    await page.waitForFunction(() => document.querySelector('.home-plan .home-art img')?.getAttribute('src') === '/cards/plan-poster.jpg')
+    await page.getByRole('button', { name: '完成' }).click()
+
     for (const [card, file] of [
       ['home-note-food', 'food-poster.jpg'],
       ['home-note-fun', 'fun-poster.png'],

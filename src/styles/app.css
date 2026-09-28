@@ -118,6 +118,22 @@ h2 { font-size: 18px; margin: 0 0 14px; }
 .dialog input[type="file"] { padding: 7px; }
 .dialog input[type="range"] { accent-color: var(--app-primary); padding: 0; min-height: 26px; }
 .dialog-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 18px; }
+/* 首页插画选择：两张内置插画缩略图并排，当前项高亮。 */
+.plan-art-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 16px 0; }
+.plan-art-option {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 7px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--app-soft);
+  color: var(--app-ink);
+  font-size: 13px;
+}
+.plan-art-option img { display: block; width: 100%; height: 74px; object-fit: cover; border-radius: 7px; }
+.plan-art-option.is-current { border-color: var(--app-primary); }
+.plan-art-option:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
 .summary-card { background: rgba(var(--app-panel-rgb), .78); padding: 18px; border-radius: 12px; }
 .font-card { min-height: 200px; display: flex; flex-direction: column; align-items: flex-start; }
@@ -719,6 +735,35 @@ button:disabled { cursor: default; opacity: .65; }
   height: 100%;
   object-fit: cover;
   border-radius: 2px;
+}
+/* 插画右下角的切换按钮：平时不抢画面，悬停／键盘聚焦时更清晰。
+   尺寸按 zoom 后的实际显示调整（页面 zoom .88），保证仍是便于点击的目标。 */
+.home-art { position: relative; }
+.home-art-switch {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .78);
+  border-radius: 9px;
+  color: #fffdf5;
+  background: rgba(18, 30, 28, .62);
+  box-shadow: 0 2px 10px rgba(12, 24, 22, .42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: .92;
+  transition: opacity .18s ease, background .18s ease, transform .18s ease;
+}
+.home-art-switch .app-icon { width: 19px; height: 19px; filter: drop-shadow(0 1px 2px rgba(6, 20, 18, .6)); }
+.home-art-switch:hover { opacity: 1; background: rgba(18, 30, 28, .86); transform: translateY(-1px); }
+.home-art-switch:focus-visible { opacity: 1; outline: 2px solid #fffdf5; outline-offset: 2px; }
+@media (hover: none) {
+  /* 触屏没有悬停，保持常显以确保可发现性。 */
+  .home-art-switch { opacity: 1; }
 }
 .home-plan .home-art { height: clamp(180px, 20vw, 250px); margin-bottom: 23px; }
 .home-plan-blank {
