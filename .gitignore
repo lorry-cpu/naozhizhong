@@ -1,12 +1,19 @@
 node_modules/
 .pnpm-store/
 
-# 字体共约 41MB，不进仓库：运行时从 GitHub Releases 按需下载并缓存到本机。
+# 字体共约 41MB，不进仓库：启动器会从 GitHub Release 下载到 dist/fonts/ 再同源提供给浏览器。
 # 需要打包时把 .ttf 放回 public/fonts/，见 scripts/pack-fonts.mjs。
 public/fonts/
+# 启动器下载的字体包缓存（dist/fonts/ 已被上面的规则覆盖，这里是显式说明）
 dist/fonts/
 # 字体打包产物
 release/
+
+# 开发过程中的临时脚本与验证输出，不应进仓库
+.diag*.mjs
+.verify-*.mjs
+tmp-*
+verify-out/
 
 npm-debug.log*
 yarn-debug.log*
