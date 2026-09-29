@@ -17,15 +17,18 @@
 
 界面提供两种**开源**中文字体（思源宋体 / 思源黑体，SIL OFL 1.1），可在「数据与设置」→「界面外观」中自由切换。
 
-字体文件（合计约 48MB）**不打进仓库和安装包**，而是**首次使用时按需下载**并缓存到本机 IndexedDB：
+字体文件（合计约 41MB）**不打进仓库和安装包**，而是**首次使用时按需下载**并缓存到本机 IndexedDB：
 
 - 在设置页选中某个字体时会自动下载，界面会显示下载进度。
-- 下载过的字体会缓存，之后切换无需再联网；设置页会显示缓存占用，并提供“清除字体缓存”。
+- 下载一次会把**两款字体都缓存下来**，之后来回切换无需再联网；设置页会显示缓存占用，并提供“清除字体缓存”。
 - 字体缓存**不包含在备份文件里**（体积太大），恢复备份后如需使用请重新下载。
 - **字体下载失败不影响使用**：设置仍会保存，页面会回退到系统自带的中文字体，功能完全正常。
 
 > 早期版本内置过 15 款字体，但其中多款是**商业字体**（汉仪、潮字社、上首等），
 > 授权不允许公开分发，因此已全部移除，只保留可自由分发的开源字体。
+
+字体包需要浏览器支持 `DecompressionStream`（Chrome / Edge 80+、Firefox 113+、Safari 16.4+）；
+过旧的浏览器会提示无法解压并回退到系统字体，其余功能不受影响。
 
 ### 维护者：发布字体文件
 
@@ -33,13 +36,18 @@
 
 ```bash
 node scripts/pack-fonts.mjs --check   # 检查 public/fonts 下的 .ttf 是否齐全
-node scripts/pack-fonts.mjs           # 生成 release/fonts.tgz
+node scripts/pack-fonts.mjs           # 生成 release/fonts.tar.gz
 ```
 
 1. 把 `.ttf` 放回 `public/fonts/`（该目录已被 `.gitignore` 忽略，不会进仓库）；
 2. 在 GitHub 建一个 **tag 为 `fonts-v1`** 的 Release；
-3. 把 15 个 `.ttf` **逐个作为 Release 附件上传**（不要只传压缩包，运行时按 `<base>/<id>.ttf` 取单个文件）；
+3. 把 `release/fonts.tar.gz` **作为单个附件上传**，文件名保持 `fonts.tar.gz`；
 4. 修改 [`src/domain/fonts.ts`](src/domain/fonts.ts) 里的 `FONT_BASE_URL` 为你自己的仓库地址。
+
+> **为什么是 `.tar.gz` 而不是逐个 `.ttf`**：GitHub Releases 不接受 `.ttf` 后缀的附件。
+> 打包成一个压缩包后只需上传 1 个附件（约 41MB）。浏览器端用原生
+> `DecompressionStream` 解压，见 [`src/domain/archive.ts`](src/domain/archive.ts)。
+> **不要改成 zip**：浏览器没有内置 zip 解压 API，会被迫引入第三方依赖。
 
 > 构建时 Vite 默认会把 `public/` 整个复制进 `dist/`，所以 [`vite.config.ts`](vite.config.ts) 里加了一个插件，在构建结束后删除 `dist/fonts`，确保安装包和构建产物都不含字体。
 

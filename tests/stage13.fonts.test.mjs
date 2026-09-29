@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdtemp, rm, readFile, access } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, access, writeFile, mkdir } from 'node:fs/promises'
+import { gzipSync } from 'node:zlib'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { chromium } from 'playwright'
@@ -10,7 +11,8 @@ const origin = 'http://127.0.0.1:8765'
 
 /**
  * 字体已从仓库移除（体积原因），改为运行时从 GitHub Releases 下载。
- * 测试需要一份真实 ttf 才能验证「下载 → 缓存 → 注册」链路：
+ * 又因为 GitHub Releases 不接受 .ttf 附件，下载的是单个 fonts.tar.gz。
+ * 测试需要一份真实 ttf 才能验证「下载 → 解压 → 缓存 → 注册」链路：
  * 优先用本机 public/fonts 下现成的文件；没有就跳过相关断言。
  */
 async function loadFontFixture() {
@@ -25,6 +27,24 @@ async function loadFontFixture() {
     } catch { /* 试下一个 */ }
   }
   return null
+}
+
+/**
+ * 用真实字体字节造一个 fonts.tar.gz，形状与 scripts/pack-fonts.mjs 的产物一致：
+ * 包内两个文件，文件名分别为 <id>.ttf。
+ */
+async function buildFontArchive(fixture) {
+  const dir = await mkdtemp(path.join(tmpdir(), 'rhythm-fonts-archive-'))
+  const src = path.join(dir, 'src')
+  await mkdir(src, { recursive: true })
+  await writeFile(path.join(src, 'source-han-sans.ttf'), fixture)
+  await writeFile(path.join(src, 'source-han-serif.ttf'), fixture)
+  const { execFileSync } = await import('node:child_process')
+  const tarPath = path.join(dir, 'fonts.tar')
+  execFileSync('tar', ['-cf', tarPath, '-C', src, 'source-han-sans.ttf', 'source-han-serif.ttf'], { stdio: 'pipe' })
+  const archive = gzipSync(await readFile(tarPath), { level: 6 })
+  await rm(dir, { recursive: true, force: true })
+  return archive
 }
 
 async function records(page, table) {
@@ -62,10 +82,12 @@ test('设置页可自由切换字体，字体按需下载并缓存', async () =>
       headless: true,
     })
     const page = context.pages()[0] || await context.newPage()
-    // 拦截字体下载：测试不应真的访问 GitHub。
-    await page.route('**/*.ttf', async route => {
-      if (!fontFixture) return route.abort()
-      await route.fulfill({ status: 200, contentType: 'font/ttf', body: fontFixture })
+    // 拦截字体包下载：测试不应真的访问 GitHub。
+    // 注意拦的是 fonts.tar.gz（GitHub 不接受 .ttf 附件，所以字体打成一个包）。
+    const archive = fontFixture ? await buildFontArchive(fontFixture) : null
+    await page.route('**/fonts.tar.gz', async route => {
+      if (!archive) return route.abort()
+      await route.fulfill({ status: 200, contentType: 'application/gzip', body: archive })
     })
     await page.goto(origin)
     await page.getByRole('navigation').getByRole('button', { name: '数据与设置' }).click()
@@ -122,6 +144,13 @@ test('设置页可自由切换字体，字体按需下载并缓存', async () =>
       })
       const cached = await records(page, 'fontBlobs')
       assert.equal(cached.some(row => row.id === 'source-han-sans' && row.bytes > 0), true, '字体已缓存到本机')
+      // 关键行为：一个压缩包含两款字体，下载一次就把它们都缓存下来，
+      // 之后在设置页来回切换不应再次联网。
+      assert.equal(
+        cached.some(row => row.id === 'source-han-serif' && row.bytes > 0),
+        true,
+        '同一个包里的另一款字体也应一并缓存，避免切换时重复下载 41MB',
+      )
     } else {
       console.log('跳过字体缓存断言：本机没有可用的 .ttf 夹具（字体已移出仓库）')
     }
@@ -131,6 +160,20 @@ test('设置页可自由切换字体，字体按需下载并缓存', async () =>
     await page.waitForFunction(() => document.documentElement.dataset.font === 'source-han-sans')
     await page.getByRole('navigation').getByRole('button', { name: '数据与设置' }).click()
     assert.equal(await page.locator('#font-choice').inputValue(), 'source-han-sans')
+
+    // 切回宋体：两款字体都已在缓存里，不应再发起任何字体包请求。
+    if (fontFixture) {
+      let archiveRequests = 0
+      await page.route('**/fonts.tar.gz', async route => { archiveRequests++; await route.continue() })
+      await page.locator('#font-choice').selectOption('source-han-serif')
+      await page.waitForFunction(() => document.documentElement.dataset.font === 'source-han-serif')
+      await page.waitForTimeout(400)
+      assert.equal(archiveRequests, 0, '已缓存的字体不应重新下载字体包')
+      assert.equal(
+        await page.evaluate(() => getComputedStyle(document.documentElement).fontFamily.includes('NaoSourceHanSerif')),
+        true,
+      )
+    }
 
     // 切换风格同样自由，无需兑换。
     await page.locator('#theme-choice').selectOption('focus')
