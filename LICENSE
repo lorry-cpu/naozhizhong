@@ -1,0 +1,35 @@
+MIT License
+
+Copyright (c) 2026 lorry-cpu
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## 第三方字体说明
+
+本仓库不包含任何字体文件（见 README 的「字体」章节），
+字体在首次使用时从本仓库的 GitHub Releases 按需下载。
+
+这些字体（仿宋、楷体、华文行楷、思源黑体、等线、华文隶书、思源宋体、
+潮字社放浪简、敦煌飞天楷、和风书道昭和银龙·传神、汉仪永字流云隶、
+Aa燕歌行、上首仙墨书法体、汉仪孟庆江行书、天王星像素）的版权
+归各自的字体厂商或作者所有，**本项目的 MIT 许可证不适用于这些字体文件**。
+
+字体仅作为界面预览与个人使用场景提供；如需商用，请自行向对应厂商获取授权。
