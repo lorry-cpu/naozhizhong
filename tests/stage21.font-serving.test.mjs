@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { mkdtemp, rm, readFile, writeFile, mkdir, access, stat } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
@@ -150,9 +151,6 @@ test('应用实际请求的是同源字体路径，且本机服务能提供字�
         // 在这个画布上都得到相同的像素数，无法区分。
         // 改为逐像素比对两张画布的原始数据，并确认用的是已加载字体。
         const applied = await page.evaluate(async () => {
-          // 等浏览器把已注册的 FontFace 真正加载完。
-          await document.fonts.ready
-          const faces = [...document.fonts].filter(f => f.family.startsWith('Nao'))
           const pixels = spec => {
             const c = document.createElement('canvas')
             c.width = 240; c.height = 70
@@ -163,12 +161,23 @@ test('应用实际请求的是同源字体路径，且本机服务能提供字�
             return Array.from(ctx.getImageData(0, 0, 240, 70).data)
           }
           const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i])
-          const withDownloaded = pixels('400 36px NaoSourceHanSans')
+          const faces = () => [...document.fonts].filter(f => f.family.startsWith('Nao'))
+
+          // register() 里的 face.load() 是"发射后不管"的，注册与加载完成
+          // 可能晚于 document.fonts.ready；这里轮询直到真的生效，避免偶发失败。
+          const deadline = Date.now() + 30000
+          let differs = false
           const withMissing = pixels('400 36px __DefinitelyNotAFont__')
+          while (Date.now() < deadline) {
+            await document.fonts.ready
+            differs = !same(pixels('400 36px NaoSourceHanSans'), withMissing)
+            if (differs) break
+            await new Promise(r => setTimeout(r, 200))
+          }
           return {
-            faces: faces.map(f => ({ family: f.family, status: f.status })),
-            differsFromFallback: !same(withDownloaded, withMissing),
-            loadedFamilies: faces.filter(f => f.status === 'loaded').map(f => f.family),
+            faces: faces().map(f => ({ family: f.family, status: f.status })),
+            loadedFamilies: faces().filter(f => f.status === 'loaded').map(f => f.family),
+            differsFromFallback: differs,
           }
         })
         const diag = await page.evaluate(async () => {
@@ -193,12 +202,16 @@ test('应用实际请求的是同源字体路径，且本机服务能提供字�
           `cached=${JSON.stringify(diag.cached)} dataFont=${diag.dataFont} ` +
           `字体包请求=${JSON.stringify(fontRequests)}`,
         )
-        assert.ok(applied.loadedFamilies.length > 0, '字体应加载完成')
+        // 逐像素比对才是判定"字体真的生效"的依据；
+        // status 只是辅助信息（注册与加载是异步的，时序不稳定）。
+        assert.ok(
+          applied.loadedFamilies.length > 0,
+          `字体应加载完成。faces=${JSON.stringify(applied.faces)}`,
+        )
         assert.ok(
           applied.differsFromFallback,
           '下载的字体与兜底字体渲染完全一致，说明字体没有真正生效',
-        )
-      } finally {
+        )      } finally {
         await context.close()
       }
     })
@@ -216,17 +229,71 @@ test('启动器能在本机缓存字体包，供同源请求使用', async () =>
   const dir = await mkdtemp(path.join(tmpdir(), 'rhythm-launcher-fonts-'))
   try {
     const dest = path.join(dir, 'fonts.tar.gz')
-    // 放一个足够大的假缓存，确认走 "cached" 分支且不联网。
-    await writeFile(dest, Buffer.alloc(module.MIN_BYTES, 1))
-    const outcome = await module.ensureFontArchive(dest, 'https://127.0.0.1:1/never', () => {})
+    // 放一个完整大小的假缓存，确认走 "cached" 分支且不联网。
+    await writeFile(dest, Buffer.alloc(module.EXPECTED_SIZE, 1))
+    const outcome = await module.ensureFontArchive(dest, 'http://127.0.0.1:1/never', () => {})
     assert.equal(outcome, 'cached')
-    assert.equal((await stat(dest)).size, module.MIN_BYTES)
+    assert.equal((await stat(dest)).size, module.EXPECTED_SIZE)
 
     // 无效地址时返回 'failed' 而不是抛错。
     const dest2 = path.join(dir, 'missing.tar.gz')
-    const failed = await module.ensureFontArchive(dest2, 'https://127.0.0.1:1/nope', () => {})
+    const failed = await module.ensureFontArchive(dest2, 'http://127.0.0.1:1/nope', () => {})
     assert.equal(failed, 'failed')
+    // 不留下半截文件，否则下次会误当成缓存。
+    assert.equal(existsSync(dest2 + '.part'), false)
   } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+/**
+ * 回归：传输中断必须能续传。
+ * 曾经的情况是对端提前断开时 'finish'/'error' 都不触发，
+ * 下载 Promise 永远挂住 —— 用户看到的是启动窗口卡在「下载中…」不动，
+ * 而且永远不会重试。这里用一个"先给一半再断开"的本地服务器复现。
+ */
+test('下载中断后能带 Range 续传并得到完整文件', async () => {
+  const module = await import('../launcher/fonts.cjs')
+  const { createServer } = await import('node:http')
+  const dir = await mkdtemp(path.join(tmpdir(), 'rhythm-resume-'))
+  const dest = path.join(dir, 'fonts.tar.gz')
+  const full = Buffer.alloc(module.EXPECTED_SIZE, 3)
+  const ranges = []
+  let call = 0
+
+  const server = createServer((req, res) => {
+    call++
+    ranges.push(req.headers.range || null)
+    if (call === 1) {
+      // 声明完整长度却只发一半就断开，模拟网络中断。
+      res.writeHead(200, { 'Content-Length': full.length })
+      res.write(full.subarray(0, Math.floor(module.EXPECTED_SIZE / 2)))
+      res.end()
+      return
+    }
+    const start = req.headers.range ? Number(req.headers.range.match(/bytes=(\d+)-/)[1]) : 0
+    const rest = full.subarray(start)
+    res.writeHead(req.headers.range ? 206 : 200, { 'Content-Length': rest.length })
+    res.end(rest)
+  })
+
+  try {
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+    const port = server.address().port
+
+    // 加超时保护：若实现又挂住，这里会失败而不是让整个测试套件卡死。
+    const result = await Promise.race([
+      module.ensureFontArchive(dest, `http://127.0.0.1:${port}/fonts.tar.gz`, () => {}),
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 60000)),
+    ])
+
+    assert.equal(result, 'downloaded', '中断后应能续传成功（若为 timeout 说明下载挂住了）')
+    assert.equal((await stat(dest)).size, module.EXPECTED_SIZE, '续传后文件应完整')
+    assert.equal(call >= 2, true, '应当发起了第二次（续传）请求')
+    assert.equal(ranges[0], null, '首次请求不应带 Range')
+    assert.match(String(ranges[1]), /^bytes=\d+-$/, '第二次请求应带 Range 头续传')
+  } finally {
+    server.close()
     await rm(dir, { recursive: true, force: true })
   }
 })
