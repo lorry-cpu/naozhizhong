@@ -31,17 +31,19 @@ async function loadFontFixture() {
 
 /**
  * 用真实字体字节造一个 fonts.tar.gz，形状与 scripts/pack-fonts.mjs 的产物一致：
- * 包内两个文件，文件名分别为 <id>.ttf。
+ * 包内两个文件，文件名分别为 <id>.woff2。
+ * 这里用 ttf 夹具顶替 woff2：浏览器只看 Blob 的 MIME 类型，
+ * 而 FontFace 能同时接受 ttf 与 woff2，因此足以验证下载→解压→缓存→注册链路。
  */
 async function buildFontArchive(fixture) {
   const dir = await mkdtemp(path.join(tmpdir(), 'rhythm-fonts-archive-'))
   const src = path.join(dir, 'src')
   await mkdir(src, { recursive: true })
-  await writeFile(path.join(src, 'source-han-sans.ttf'), fixture)
-  await writeFile(path.join(src, 'source-han-serif.ttf'), fixture)
+  await writeFile(path.join(src, 'source-han-sans.woff2'), fixture)
+  await writeFile(path.join(src, 'source-han-serif.woff2'), fixture)
   const { execFileSync } = await import('node:child_process')
   const tarPath = path.join(dir, 'fonts.tar')
-  execFileSync('tar', ['-cf', tarPath, '-C', src, 'source-han-sans.ttf', 'source-han-serif.ttf'], { stdio: 'pipe' })
+  execFileSync('tar', ['-cf', tarPath, '-C', src, 'source-han-sans.woff2', 'source-han-serif.woff2'], { stdio: 'pipe' })
   const archive = gzipSync(await readFile(tarPath), { level: 6 })
   await rm(dir, { recursive: true, force: true })
   return archive

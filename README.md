@@ -17,7 +17,7 @@
 
 界面提供两种**开源**中文字体（思源宋体 / 思源黑体，SIL OFL 1.1），可在「数据与设置」→「界面外观」中自由切换。
 
-字体文件（合计约 41MB）**不打进仓库和安装包**，而是**首次使用时按需下载**并缓存到本机 IndexedDB：
+字体文件（合计约 41MB，下载的是约 18MB 的 woff2 压缩包）**不打进仓库和安装包**，而是**首次使用时按需下载**并缓存到本机 IndexedDB：
 
 - 在设置页选中某个字体时会自动下载，界面会显示下载进度。
 - 下载一次会把**两款字体都缓存下来**，之后来回切换无需再联网；设置页会显示缓存占用，并提供“清除字体缓存”。
@@ -44,10 +44,18 @@ node scripts/pack-fonts.mjs           # 生成 release/fonts.tar.gz
 3. 把 `release/fonts.tar.gz` **作为单个附件上传**，文件名保持 `fonts.tar.gz`；
 4. 修改 [`src/domain/fonts.ts`](src/domain/fonts.ts) 里的 `FONT_BASE_URL` 为你自己的仓库地址。
 
-> **为什么是 `.tar.gz` 而不是逐个 `.ttf`**：GitHub Releases 不接受 `.ttf` 后缀的附件。
-> 打包成一个压缩包后只需上传 1 个附件（约 41MB）。浏览器端用原生
-> `DecompressionStream` 解压，见 [`src/domain/archive.ts`](src/domain/archive.ts)。
+打包脚本需要 `fontTools` 与 `brotli`（`pip install fonttools brotli`），用于把 `.ttf` 转成 `.woff2`。
+
+> **为什么是 `.tar.gz` 而不是逐个上传**：GitHub Releases 不接受 `.ttf` 后缀的附件。
+> 打包成一个压缩包后只需上传 1 个附件。浏览器端用原生 `DecompressionStream`
+> 解压，见 [`src/domain/archive.ts`](src/domain/archive.ts)。
 > **不要改成 zip**：浏览器没有内置 zip 解压 API，会被迫引入第三方依赖。
+
+> **为什么包内是 `.woff2` 而不是 `.ttf`**：ttf 直接 gzip 后约 25.6MiB，
+> 超过 GitHub Release 单文件 25MB 的上限，上传会被拒绝。
+> woff2 是同一套字形的**无损重打包**（Brotli + 表变换）：不删字形、不删字重、
+> 观感完全一致，体积降到约 17.9MiB。
+> `node scripts/pack-fonts.mjs` 会在超过上限时直接报错，测试里也有对应的体积断言。
 
 > 构建时 Vite 默认会把 `public/` 整个复制进 `dist/`，所以 [`vite.config.ts`](vite.config.ts) 里加了一个插件，在构建结束后删除 `dist/fonts`，确保安装包和构建产物都不含字体。
 

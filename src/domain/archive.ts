@@ -175,20 +175,47 @@ export async function decompress(
   return new Uint8Array(buffer)
 }
 
+/** 包内允许的字体扩展名。woff2 是发布用的格式（体积约为 ttf 的 45%）。 */
+const FONT_EXTENSIONS = ['.woff2', '.ttf'] as const
+
+/** 供 @font-face 使用的 MIME 类型。 */
+export function fontMimeType(name: string): string {
+  return name.endsWith('.woff2') ? 'font/woff2' : 'font/ttf'
+}
+
 /**
  * 一步解压 .tar.gz 并返回其中的字体条目。
- * 文件名形如 `<id>.ttf`；只保留扩展名为 .ttf 的常规文件。
+ * 键是不带扩展名的字体 id，值同时保留字节与原始文件名，
+ * 以便调用方设置正确的 MIME 类型（woff2 与 ttf 不同）。
  */
+export interface ExtractedFont {
+  id: string
+  /** 归档内的原始文件名，例如 `source-han-serif.woff2`。 */
+  fileName: string
+  /** 供 Blob / @font-face 使用的 MIME 类型。 */
+  mimeType: string
+  data: Uint8Array
+}
+
 export async function extractFontsFromArchive(
   bytes: Uint8Array,
   format: 'gzip' | 'deflate' | 'deflate-raw' = 'gzip',
-): Promise<Map<string, Uint8Array>> {
+): Promise<Map<string, ExtractedFont>> {
   const tarBytes = await decompress(bytes, format)
-  const result = new Map<string, Uint8Array>()
+  const result = new Map<string, ExtractedFont>()
   for (const entry of parseTar(tarBytes)) {
-    if (!entry.base.endsWith('.ttf')) continue
-    result.set(entry.base.replace(/\.ttf$/, ''), entry.data)
+    const extension = FONT_EXTENSIONS.find(ext => entry.base.endsWith(ext))
+    if (!extension) continue
+    const id = entry.base.slice(0, -extension.length)
+    result.set(id, {
+      id,
+      fileName: entry.base,
+      mimeType: fontMimeType(entry.base),
+      data: entry.data,
+    })
   }
-  if (result.size === 0) throw new TarError('字体包里没有找到任何 .ttf 文件')
+  if (result.size === 0) {
+    throw new TarError('字体包里没有找到任何字体文件（.woff2 / .ttf）')
+  }
   return result
 }

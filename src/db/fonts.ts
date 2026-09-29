@@ -1,6 +1,6 @@
 import { FONTS, type FontId } from '../domain/rules'
 import { FONT_ARCHIVE_NAME, fontArchiveUrl } from '../domain/fonts'
-import { extractFontsFromArchive } from '../domain/archive'
+import { extractFontsFromArchive, type ExtractedFont } from '../domain/archive'
 import { byId, openDatabase, requestValue, transactionDone } from './database'
 import type { FontBlob } from './types'
 
@@ -72,14 +72,14 @@ export async function useCachedFont(id: FontId): Promise<boolean> {
 }
 
 /** 一次性把解压出来的字体写入缓存（单事务，只广播一次变更）。 */
-async function cacheFonts(fonts: Map<string, Uint8Array>): Promise<void> {
+async function cacheFonts(fonts: Map<string, ExtractedFont>): Promise<void> {
   const db = await openDatabase()
   const tx = db.transaction('fontBlobs', 'readwrite')
   const done = transactionDone(tx)
   const store = tx.objectStore('fontBlobs')
   const now = Date.now()
-  for (const [id, data] of fonts) {
-    const blob = new Blob([data as BlobPart], { type: 'font/ttf' })
+  for (const [id, font] of fonts) {
+    const blob = new Blob([font.data as BlobPart], { type: font.mimeType })
     store.put({ id, data: blob, bytes: blob.size, fetchedAt: now } as FontBlob)
   }
   await done
@@ -124,14 +124,14 @@ async function downloadAndUnpack(
   const fonts = await extractFontsFromArchive(bytes, 'gzip')
   onProgress?.(0.95)
 
-  // 把解压出来的字体逐个写入缓存；至少要包含用户当前选中的那一款。
+  // 把解压出来的字体逐个放入内存缓存；至少要包含用户当前选中的那一款。
   let result: Blob | null = null
-  for (const [id, data] of fonts) {
-    const blob = new Blob([data as BlobPart], { type: 'font/ttf' })
+  for (const [id, font] of fonts) {
+    const blob = new Blob([font.data as BlobPart], { type: font.mimeType })
     unpacked.set(id as FontId, blob)
     if (id === wanted) result = blob
   }
-  if (!result) throw new Error(`字体包里没有 ${wanted}.ttf`)
+  if (!result) throw new Error(`字体包里没有找到 ${wanted}`)
 
   // 缓存写入放在后面：即使写库失败，当前会话仍能正常显示字体。
   // 用一个事务写完全部字体：逐个 save() 会各自广播一次变更事件，

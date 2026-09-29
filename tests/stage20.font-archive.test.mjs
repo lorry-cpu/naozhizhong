@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, mkdir, rm, writeFile, readFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, rm, writeFile, readFile, access, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { gzipSync } from 'node:zlib'
 import path from 'node:path'
@@ -32,12 +32,12 @@ async function makeArchive(files, { gzip = true } = {}) {
 }
 
 test('能从真实的 tar 产物里解析出文件内容', async () => {
-  const payload = { 'source-han-serif.ttf': 'SERIF-BYTES', 'source-han-sans.ttf': 'SANS-BYTES' }
+  const payload = { 'source-han-serif.woff2': 'SERIF-BYTES', 'source-han-sans.woff2': 'SANS-BYTES' }
   const archive = await makeArchive(payload)
   try {
     const entries = parseTar(archive.tarBytes)
-    assert.deepEqual(entries.map(entry => entry.base).sort(), ['source-han-sans.ttf', 'source-han-serif.ttf'])
-    const serif = entries.find(entry => entry.base === 'source-han-serif.ttf')
+    assert.deepEqual(entries.map(entry => entry.base).sort(), ['source-han-sans.woff2', 'source-han-serif.woff2'])
+    const serif = entries.find(entry => entry.base === 'source-han-serif.woff2')
     assert.equal(new TextDecoder().decode(serif.data), 'SERIF-BYTES')
   } finally {
     await rm(archive.dir, { recursive: true, force: true })
@@ -45,12 +45,30 @@ test('能从真实的 tar 产物里解析出文件内容', async () => {
 })
 
 test('解压 fonts.tar.gz 能得到按字体 id 索引的字节', async () => {
-  const payload = { 'source-han-serif.ttf': 'SERIF-BYTES', 'source-han-sans.ttf': 'SANS-BYTES' }
+  const payload = { 'source-han-serif.woff2': 'SERIF-BYTES', 'source-han-sans.woff2': 'SANS-BYTES' }
   const archive = await makeArchive(payload)
   try {
     const fonts = await extractFontsFromArchive(archive.gzBytes, 'gzip')
     assert.deepEqual([...fonts.keys()].sort(), ['source-han-sans', 'source-han-serif'])
-    assert.equal(new TextDecoder().decode(fonts.get('source-han-sans')), 'SANS-BYTES')
+    assert.equal(new TextDecoder().decode(fonts.get('source-han-sans').data), 'SANS-BYTES')
+  } finally {
+    await rm(archive.dir, { recursive: true, force: true })
+  }
+})
+
+// 字体的 MIME 类型必须跟着包内扩展名走：woff2 用 font/woff2，
+// 否则部分浏览器会拒绝加载。
+test('解压结果带着正确的 MIME 类型与原始文件名', async () => {
+  const archive = await makeArchive({
+    'source-han-serif.woff2': 'W2',
+    'source-han-sans.ttf': 'TTF',
+  })
+  try {
+    const fonts = await extractFontsFromArchive(archive.gzBytes, 'gzip')
+    assert.equal(fonts.get('source-han-serif').mimeType, 'font/woff2')
+    assert.equal(fonts.get('source-han-serif').fileName, 'source-han-serif.woff2')
+    // 兼容老的 ttf 包：仍然能识别，但 MIME 不同。
+    assert.equal(fonts.get('source-han-sans').mimeType, 'font/ttf')
   } finally {
     await rm(archive.dir, { recursive: true, force: true })
   }
@@ -78,14 +96,14 @@ test('嵌套目录下的字体同样能被解析出来，非 .ttf 条目被忽�
     // 走完整链路：压成 gzip 后再解，结果一致。
     const fonts = await extractFontsFromArchive(new Uint8Array(gzipSync(tarBytes)), 'gzip')
     assert.deepEqual([...fonts.keys()], ['source-han-serif'])
-    assert.equal(new TextDecoder().decode(fonts.get('source-han-serif')), 'NESTED')
+    assert.equal(new TextDecoder().decode(fonts.get('source-han-serif').data), 'NESTED')
   } finally {
     await rm(dir, { recursive: true, force: true })
   }
 })
 
 test('未压缩的数据当作 gzip 解开会失败，不会被误判成合法归档', async () => {
-  const archive = await makeArchive({ 'source-han-serif.ttf': 'SERIF-BYTES' })
+  const archive = await makeArchive({ 'source-han-serif.woff2': 'SERIF-BYTES' })
   try {
     await assert.rejects(
       () => extractFontsFromArchive(archive.tarBytes, 'gzip'),
@@ -123,7 +141,7 @@ test('损坏的归档会明确报错，而不是悄悄返回空结果', async ()
 test('头部校验和正确但数据被改写时，解压出来的字节忠实反映归档内容', async () => {
   // tar 的校验和只保护头部，不保护数据区；这里明确记录这一事实，
   // 避免以后误以为解析器会替我们校验字体字节的完整性。
-  const archive = await makeArchive({ 'source-han-serif.ttf': 'ORIGINAL-BYTES' })
+  const archive = await makeArchive({ 'source-han-serif.woff2': 'ORIGINAL-BYTES' })
   try {
     const tampered = archive.tarBytes.slice()
     // 数据区从第 512 字节开始。
@@ -136,12 +154,12 @@ test('头部校验和正确但数据被改写时，解压出来的字节忠实�
   }
 })
 
-test('归档里没有 .ttf 时给出可读的错误', async () => {
+test('归档里没有字体文件时给出可读的错误', async () => {
   const archive = await makeArchive({ 'notes.txt': 'hello' })
   try {
     await assert.rejects(
       () => extractFontsFromArchive(archive.gzBytes, 'gzip'),
-      /没有找到任何 \.ttf/,
+      /没有找到任何字体文件/,
     )
   } finally {
     await rm(archive.dir, { recursive: true, force: true })
@@ -152,6 +170,28 @@ test('decompress 支持 gzip 与 deflate-raw 两种容器', async () => {
   const text = new TextEncoder().encode('闹之钟')
   const gz = new Uint8Array(gzipSync(text))
   assert.deepEqual(await decompress(gz, 'gzip'), text)
+})
+
+/**
+ * 回归：GitHub Release 单文件上限 25MB。
+ * 曾经用 ttf 直接打包，产物 26,798,264 字节，上传时被拒绝。
+ * 这个测试守住上限，避免以后换字体或改格式时又踩同一个坑。
+ */
+test('字体包必须小于 GitHub Release 的 25MB 上限', async () => {
+  const archivePath = path.join(process.cwd(), 'release', 'fonts.tar.gz')
+  try {
+    await access(archivePath)
+  } catch {
+    // 发布包是本地生成的（release/ 不进仓库），没有就跳过。
+    console.log('跳过体积断言：尚未生成 release/fonts.tar.gz（先运行 npm run fonts:pack）')
+    return
+  }
+  const { size } = await stat(archivePath)
+  const limit = 25 * 1000 * 1000
+  assert.ok(
+    size < limit,
+    `字体包 ${size} 字节超过 GitHub 的 ${limit} 字节上限（超出 ${size - limit} 字节），上传会被拒绝`,
+  )
 })
 
 test('路径穿越的文件名会被拒绝', () => {
