@@ -9,14 +9,14 @@ import { chromium } from 'playwright'
 const origin = 'http://127.0.0.1:8765'
 
 /**
- * 字体已从仓库移除（15 个共约 194MB），改为运行时从 Releases 下载。
+ * 字体已从仓库移除（体积原因），改为运行时从 GitHub Releases 下载。
  * 测试需要一份真实 ttf 才能验证「下载 → 缓存 → 注册」链路：
- * 优先用本机 public/fonts 下的文件；没有就跳过相关断言。
+ * 优先用本机 public/fonts 下现成的文件；没有就跳过相关断言。
  */
 async function loadFontFixture() {
   const candidates = [
-    path.join(process.cwd(), 'public', 'fonts', 'tianwangxing.ttf'),
-    path.join(process.cwd(), 'dist', 'fonts', 'tianwangxing.ttf'),
+    path.join(process.cwd(), 'public', 'fonts', 'source-han-sans.ttf'),
+    path.join(process.cwd(), 'dist', 'fonts', 'source-han-sans.ttf'),
   ]
   for (const candidate of candidates) {
     try {
@@ -42,7 +42,9 @@ async function records(page, table) {
   }, table)
 }
 
-test('字体默认思源宋体，字体可预览、以 200 金币购买并持久化', async () => {
+// 金币机制已移除：字体不再需要购买，直接在设置页切换。
+// 只保留两种开源字体（思源宋体 / 思源黑体）。
+test('设置页可自由切换字体，字体按需下载并缓存', async () => {
   const profile = await mkdtemp(path.join(tmpdir(), 'rhythm-stage13-'))
   const server = spawn(process.execPath, ['launcher/serve.cjs', '--no-open'])
   const fontFixture = await loadFontFixture()
@@ -60,23 +62,39 @@ test('字体默认思源宋体，字体可预览、以 200 金币购买并持久
       headless: true,
     })
     const page = context.pages()[0] || await context.newPage()
+    // 拦截字体下载：测试不应真的访问 GitHub。
+    await page.route('**/*.ttf', async route => {
+      if (!fontFixture) return route.abort()
+      await route.fulfill({ status: 200, contentType: 'font/ttf', body: fontFixture })
+    })
     await page.goto(origin)
-    await page.getByRole('navigation').getByRole('button', { name: '金币与风格' }).click()
-    await page.getByRole('heading', { name: '字体商店' }).waitFor()
+    await page.getByRole('navigation').getByRole('button', { name: '数据与设置' }).click()
+    await page.getByRole('heading', { name: '数据与设置' }).waitFor()
 
-    assert.equal(await page.locator('[data-testid^="font-card-"]').count(), 15)
-    assert.equal(await page.locator('[data-testid="font-card-source-han-serif"] .font-preview').count(), 1)
-    assert.equal(await page.locator('[data-testid="font-card-kaiti"]').innerText().then(text => /200 金币/.test(text)), true)
-    assert.equal(await page.evaluate(() => document.documentElement.dataset.font), 'source-han-serif')
-    assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).fontFamily.includes('NaoSourceHanSerif')), true)
-    // 字体不再打进构建产物：/fonts/*.ttf 应已不可访问，
-    // 字库改为运行时从 GitHub Releases 下载（见 src/domain/fonts.ts）。
-    assert.equal(await page.evaluate(async () => (await fetch('/fonts/source-han-serif.ttf')).ok), false, '字体已移出构建产物')
-    for (const id of ['chaozi', 'dunhuang', 'hefeng', 'yongzi', 'yange', 'shangshou', 'mengqingjiang', 'tianwangxing']) {
-      assert.equal(await page.locator(`[data-testid="font-card-${id}"] .font-preview`).count(), 1)
+    // 只有两种开源字体可选，且不带「未购买」之类的禁用状态。
+    const options = await page.locator('#font-choice option').allInnerTexts()
+    assert.deepEqual(options, ['思源宋体', '思源黑体'], '只提供两种开源字体')
+    for (const option of await page.locator('#font-choice option').all()) {
+      assert.equal(await option.isDisabled(), false, '字体都可直接选择，无需购买')
     }
-    // CSS 里不再有 @font-face，字体由运行时注入；
-    // 下载失败时应回退到系统兜底字体而不是白屏。
+    assert.deepEqual(
+      await page.locator('#theme-choice option').allInnerTexts(),
+      ['温暖日常', '清爽冷调', '专注简约'],
+      '三种风格都可自由切换',
+    )
+
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.font), 'source-han-serif')
+    assert.equal(
+      await page.evaluate(() => getComputedStyle(document.documentElement).fontFamily.includes('NaoSourceHanSerif')),
+      true,
+    )
+    // 字体不再打进构建产物，改为运行时注入 @font-face。
+    // 注意：用 Playwright 的 request 直接问服务器，避开上面拦截 *.ttf 的路由。
+    assert.equal(
+      (await page.request.get(`${origin}/fonts/source-han-serif.ttf`)).ok(),
+      false,
+      '字体已移出构建产物',
+    )
     assert.equal(
       await page.evaluate(() => [...document.styleSheets].some(sheet => {
         try { return [...sheet.cssRules].some(rule => rule.constructor.name === 'CSSFontFaceRule') } catch { return false }
@@ -85,65 +103,45 @@ test('字体默认思源宋体，字体可预览、以 200 金币购买并持久
       '构建产物中不含 @font-face',
     )
 
-    await page.evaluate(async () => {
-      const db = await new Promise((resolve, reject) => {
-        const request = indexedDB.open('personal-rhythm-v1')
-        request.onsuccess = () => resolve(request.result)
-        request.onerror = () => reject(request.error)
-      })
-      await new Promise((resolve, reject) => {
-        const tx = db.transaction('ledger', 'readwrite')
-        tx.objectStore('ledger').add({
-          id: 'font-test-coins',
-          sourceKey: 'font-test-coins',
-          amount: 200,
-          at: Date.now(),
-          reason: '字体测试奖励',
-        })
-        tx.oncomplete = resolve
-        tx.onerror = () => reject(tx.error)
-      })
-    })
-    await page.reload()
-    await page.getByRole('navigation').getByRole('button', { name: '金币与风格' }).click()
-    page.on('dialog', dialog => dialog.accept())
-    // 购买会触发字体下载。测试不能真的访问 GitHub，所以拦截请求并回一个真实字体文件。
-    // 字体已从仓库移除（体积原因），因此这里优先用本机 public/fonts 里现成的一个；
-    // 若开发机上也没有字体文件，则跳过下载相关断言，避免测试依赖网络或大文件。
-    await page.route('**/*.ttf', async route => {
-      if (!fontFixture) return route.abort()
-      await route.fulfill({ status: 200, contentType: 'font/ttf', body: fontFixture })
-    })
-    await page.locator('[data-testid="font-card-kaiti"]').getByRole('button', { name: '购买并使用' }).click()
-    await page.waitForFunction(() => document.documentElement.dataset.font === 'kaiti')
-    assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).fontFamily.includes('NaoKaiTi')), true)
-    assert.match(await page.locator('[data-testid="font-card-kaiti"]').innerText(), /使用中/)
-    assert.equal((await records(page, 'ledger')).filter(entry => entry.reason.includes('购买字体')).length, 1)
-    assert.equal((await records(page, 'settings')).find(row => row.key === 'font')?.value, 'kaiti')
+    // 切换到另一种字体：应保存设置并触发下载。
+    await page.locator('#font-choice').selectOption('source-han-sans')
+    await page.waitForFunction(() => document.documentElement.dataset.font === 'source-han-sans')
+    assert.equal(
+      await page.evaluate(() => getComputedStyle(document.documentElement).fontFamily.includes('NaoSourceHanSans')),
+      true,
+    )
+    assert.equal((await records(page, 'settings')).find(row => row.key === 'font')?.value, 'source-han-sans')
     if (fontFixture) {
-      // 下载的字体会缓存到本机（不进备份），刷新后无需重新联网。
       await page.waitForFunction(async () => {
         const db = await new Promise(resolve => { const r = indexedDB.open('personal-rhythm-v1'); r.onsuccess = () => resolve(r.result) })
         return await new Promise(resolve => {
-          const r = db.transaction('fontBlobs').objectStore('fontBlobs').get('kaiti')
+          const r = db.transaction('fontBlobs').objectStore('fontBlobs').get('source-han-sans')
           r.onsuccess = () => resolve(Boolean(r.result && r.result.bytes > 0))
           r.onerror = () => resolve(false)
         })
       })
       const cached = await records(page, 'fontBlobs')
-      assert.equal(cached.some(row => row.id === 'kaiti' && row.bytes > 0), true, '字体已缓存到本机')
+      assert.equal(cached.some(row => row.id === 'source-han-sans' && row.bytes > 0), true, '字体已缓存到本机')
     } else {
       console.log('跳过字体缓存断言：本机没有可用的 .ttf 夹具（字体已移出仓库）')
     }
 
+    // 刷新后仍是所选字体。
     await page.reload()
-    await page.waitForFunction(() => document.documentElement.dataset.font === 'kaiti')
-    await page.getByRole('navigation').getByRole('button', { name: '金币与风格' }).click()
-    // 卡片里现在有两个 button（可点击的预览文字 + 购买/使用按钮），
-    // 所以这里按名称定位，避免歧义。
-    assert.match(await page.locator('[data-testid="font-card-kaiti"]').innerText(), /使用中/)
-    assert.equal(await page.locator('[data-testid="font-card-kaiti"] .button-primary').isDisabled(), true)
-    assert.equal((await records(page, 'ledger')).reduce((sum, entry) => sum + entry.amount, 0), 0)
+    await page.waitForFunction(() => document.documentElement.dataset.font === 'source-han-sans')
+    await page.getByRole('navigation').getByRole('button', { name: '数据与设置' }).click()
+    assert.equal(await page.locator('#font-choice').inputValue(), 'source-han-sans')
+
+    // 切换风格同样自由，无需兑换。
+    await page.locator('#theme-choice').selectOption('focus')
+    await page.waitForFunction(() => document.documentElement.dataset.theme === 'focus')
+
+    // 不再有任何金币相关记录。
+    const stores = await page.evaluate(async () => {
+      const db = await new Promise(resolve => { const r = indexedDB.open('personal-rhythm-v1'); r.onsuccess = () => resolve(r.result) })
+      return [...db.objectStoreNames]
+    })
+    assert.equal(stores.includes('ledger'), false, '金币流水表已移除')
   } finally {
     await context?.close()
     server.kill()

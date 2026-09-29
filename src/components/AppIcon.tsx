@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 /** 本地图标统一使用线条和 currentColor，与主题、壁纸及字体设置兼容。 */
-export type AppIconName = 'clock' | 'memo' | 'tasks' | 'food' | 'fun' | 'badminton' | 'coins' | 'settings' | 'wallpaper'
+export type AppIconName = 'clock' | 'memo' | 'tasks' | 'food' | 'fun' | 'badminton' | 'settings' | 'wallpaper'
 
 export function AppIcon({ name }: { name: AppIconName }) {
   const artwork = {
@@ -29,12 +29,6 @@ export function AppIcon({ name }: { name: AppIconName }) {
     badminton: <>
       <path d="m7.5 15.8 4-11.4 4.8-.8 4.1 3.9-1 4.7-9.4 6.3M11.5 4.4l5 10.7M16.3 3.6l.3 11.5M20.4 7.5l-8 9M7.5 15.8l2.5 2.7" />
       <path d="M5.1 16.7a2.2 2.2 0 0 1 3.1-.1l1.2 1.2a2.2 2.2 0 0 1-3.1 3.1l-1.2-1.2a2.2 2.2 0 0 1 0-3Z" />
-    </>,
-    coins: <>
-      <rect x="3" y="8" width="18" height="12.25" rx="2.25" />
-      <path d="M3.25 11.25h17.5M5.25 8V5.75A2 2 0 0 1 7.25 3.75H18" />
-      <circle cx="16.5" cy="15.75" r="2.15" />
-      <path d="M15.7 14.85 16.5 15.75l.8-.9M16.5 15.75v1.05" />
     </>,
     settings: <>
       <path d="M10.1 3.1h3.8l.5 2.1c.5.2.95.45 1.35.8l2-.8 2.7 2.7-.85 2c.3.4.55.85.75 1.3l2.1.55v3.8l-2.1.5c-.2.5-.45.95-.8 1.35l.8 2-2.7 2.7-2-.85c-.4.3-.85.55-1.3.75l-.55 2.1h-3.8l-.5-2.1c-.5-.2-.95-.45-1.35-.8l-2 .8-2.7-2.7.85-2c-.3-.4-.55-.85-.75-1.3l-2.1-.55v-3.8l2.1-.5c.2-.5.45-.95.8-1.35l-.8-2 2.7-2.7 2 .85c.4-.3.85-.55 1.3-.75z" transform="translate(0 -1.5) scale(1 .91)" />

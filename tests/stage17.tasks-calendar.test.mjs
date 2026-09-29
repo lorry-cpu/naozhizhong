@@ -77,7 +77,7 @@ test('今日计划支持日周月视图；新增与界面设置按新字段工�
     await page.getByRole('button', { name: '打卡', exact: true }).click()
     await page.getByRole('dialog').getByRole('slider').fill('75')
     await page.getByRole('button', { name: '确认打卡' }).click()
-    await page.getByText(/已结算 75%/).waitFor()
+    await page.getByText(/已完成 75%/).waitFor()
 
     await page.locator('.tasks-settings-button').click()
     const settingsDialog = page.locator('.task-settings-dialog')

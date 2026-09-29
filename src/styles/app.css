@@ -13,24 +13,12 @@
   background: var(--app-bg);
   font-synthesis: none;
 }
-/* 字体文件不再打进构建产物（15 个共约 194MB，会让仓库 clone 极慢）。
-   改为首次使用时从 GitHub Releases 下载并由 src/db/fonts.ts 在运行时注入
-   @font-face。下面的 --app-font-family 保留系统字体作为兜底，
-   字体未下载完成时页面仍可正常阅读。 */
-:root[data-font="kaiti"] { --app-font-family: "NaoKaiTi", "KaiTi", "楷体", serif; }
-:root[data-font="handbook"] { --app-font-family: "NaoHandbook", "STXingkai", "华文行楷", cursive; }
+/* 只保留两种开源字体（思源宋体 / 思源黑体，SIL OFL 1.1）。
+   字体文件不打进构建产物，改为首次使用时从 GitHub Releases 下载，
+   由 src/db/fonts.ts 在运行时注入 @font-face。
+   下面的 --app-font-family 保留系统字体作为兜底，字体未下载完也能正常阅读。 */
 :root[data-font="source-han-sans"] { --app-font-family: "NaoSourceHanSans", "Noto Sans SC", sans-serif; }
-:root[data-font="minimal"] { --app-font-family: "NaoMinimal", "DengXian", "等线", sans-serif; }
-:root[data-font="handwrite"] { --app-font-family: "NaoHandwrite", "STLiti", "华文隶书", serif; }
 :root[data-font="source-han-serif"] { --app-font-family: "NaoSourceHanSerif", "Noto Serif SC", serif; }
-:root[data-font="chaozi"] { --app-font-family: "NaoChaozi", cursive; }
-:root[data-font="dunhuang"] { --app-font-family: "NaoDunhuang", serif; }
-:root[data-font="hefeng"] { --app-font-family: "NaoHefeng", cursive; }
-:root[data-font="yongzi"] { --app-font-family: "NaoYongzi", serif; }
-:root[data-font="yange"] { --app-font-family: "NaoYange", cursive; }
-:root[data-font="shangshou"] { --app-font-family: "NaoShangshou", cursive; }
-:root[data-font="mengqingjiang"] { --app-font-family: "NaoMengqingjiang", cursive; }
-:root[data-font="tianwangxing"] { --app-font-family: "NaoTianwangxing", monospace; }
 :root[data-theme="cool"] { --app-bg: #f0f4f8; --app-panel: #fff; --app-panel-rgb: 255, 255, 255; --app-ink: #1e3044; --app-muted: #64758a; --app-border: #e0e8f1; --app-primary: #326ca8; --app-soft: #e9f2fc; }
 :root[data-theme="focus"] { --app-bg: #232626; --app-panel: #303535; --app-panel-rgb: 48, 53, 53; --app-ink: #e8edeb; --app-muted: #b2c0ba; --app-border: #48514e; --app-primary: #8bcaac; --app-soft: #36483e; color-scheme: dark; }
 * { box-sizing: border-box; }
@@ -53,7 +41,7 @@ button { cursor: pointer; }
 .topbar nav { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
 .nav-item { position: relative; width: 46px; height: 46px; flex: 0 0 46px; display: grid; place-items: center; border: 0; background: transparent; color: var(--app-muted); border-radius: 10px; padding: 0; }
 .nav-item:hover, .nav-item.active { color: #252525; background: #ebe7e1; }
-.nav-item:focus-visible, .brand:focus-visible, .top-balance:focus-visible, .wallpaper-button:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
+.nav-item:focus-visible, .brand:focus-visible, .wallpaper-button:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
 .nav-icon { font-size: 22px; line-height: 1; width: auto; text-align: center; }
 .topbar nav .nav-item[title]:hover::after, .topbar nav .nav-item[title]:focus-visible::after { content: attr(title); position: absolute; z-index: 2; top: 52px; left: 50%; transform: translateX(-50%); padding: 5px 9px; border-radius: 5px; background: #252525; color: #fff; font-size: 12px; line-height: 1.2; white-space: nowrap; }
 .topbar small, .subtitle { color: var(--app-muted); }
@@ -139,23 +127,8 @@ button.font-preview {
 }
 button.font-preview:hover { border-color: var(--app-border); background: var(--app-soft); }
 button.font-preview:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
-.font-preview-fangsong .font-preview { font-family: "NaoFangSong", serif; }
-.font-preview-kaiti .font-preview { font-family: "NaoKaiTi", serif; }
-.font-preview-handbook .font-preview { font-family: "NaoHandbook", cursive; }
 .font-preview-source-han-sans .font-preview { font-family: "NaoSourceHanSans", sans-serif; }
-.font-preview-minimal .font-preview { font-family: "NaoMinimal", sans-serif; }
-.font-preview-handwrite .font-preview { font-family: "NaoHandwrite", serif; }
 .font-preview-source-han-serif .font-preview { font-family: "NaoSourceHanSerif", serif; }
-.font-preview-chaozi .font-preview { font-family: "NaoChaozi", cursive; }
-.font-preview-dunhuang .font-preview { font-family: "NaoDunhuang", serif; }
-.font-preview-hefeng .font-preview { font-family: "NaoHefeng", cursive; }
-.font-preview-yongzi .font-preview { font-family: "NaoYongzi", serif; }
-.font-preview-yange .font-preview { font-family: "NaoYange", cursive; }
-.font-preview-shangshou .font-preview { font-family: "NaoShangshou", cursive; }
-.font-preview-mengqingjiang .font-preview { font-family: "NaoMengqingjiang", cursive; }
-.font-preview-tianwangxing .font-preview { font-family: "NaoTianwangxing", monospace; }
-.history-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--app-border); }
-.history-row span { overflow-wrap: anywhere; }
 .memo-record { display: grid; grid-template-columns: 120px minmax(0, 1fr); width: 100%; text-align: left; gap: 14px; border: 0; border-top: 1px solid var(--app-border); background: transparent; color: var(--app-ink); padding: 13px 0; }
 .memo-record span { overflow-wrap: anywhere; }
 .memo-record.active { color: var(--app-primary); }
@@ -194,7 +167,6 @@ button:disabled { cursor: default; opacity: .65; }
   .nav-item { width: 40px; height: 42px; flex-basis: 40px; }
   .top-actions { gap: 5px; }
   .wallpaper-button { width: 36px; height: 36px; }
-  .top-balance { padding: 7px 10px; font-size: 13px; }
   .content { padding: 22px 16px; }
 }
 @media (max-width: 450px) {
@@ -204,10 +176,7 @@ button:disabled { cursor: default; opacity: .65; }
   .brand-icon { width: 30px; height: 30px; }
   .nav-item { width: 36px; flex-basis: 36px; }
   .wallpaper-button { width: 34px; height: 34px; }
-  .top-balance { padding: 7px 8px; }
 }
-.top-balance { display: inline-flex; align-items: center; gap: 5px; color: #66533a; background: #fff3db; border: 0; border-radius: 20px; padding: 8px 14px; white-space: nowrap; font-weight: 600; }
-.coin-icon { font-size: 17px; line-height: 1; }
 
 /* ===== 首页总览 · 手帐纸质风（仅作用于 .home-* 类，不影响其它页面） ===== */
 .home {
@@ -627,10 +596,6 @@ button:disabled { cursor: default; opacity: .65; }
 .nav-item:hover, .nav-item.active { color: var(--app-primary); background: var(--app-soft); }
 .nav-item.active { box-shadow: inset 0 0 0 1px var(--app-border); }
 .wallpaper-button .app-icon { width: 20px; height: 20px; }
-.top-balance { background: rgba(255, 248, 228, .88); color: #79551c; border: 1px solid rgba(154, 114, 45, .12); }
-.coin-icon { display: inline-flex; align-items: center; }
-.coin-icon .app-icon { width: 19px; height: 19px; }
-:root[data-theme="focus"] .top-balance { background: rgba(107, 86, 48, .45); color: #f6d69a; border-color: rgba(246, 214, 154, .2); }
 :root[data-theme="focus"] .brand-icon { background: #343c39; }
 
 .home-sheet-head h2 {
@@ -1724,8 +1689,6 @@ button:disabled { cursor: default; opacity: .65; }
 .task-form-detail-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .task-form-detail-grid label { min-width: 0; }
 .task-form-wide { grid-column: 1 / -1; }
-.task-reward-preview { margin: 12px 0 0; color: var(--tasks-muted); font-size: calc(13px * var(--task-calendar-text-scale)); }
-.task-reward-preview strong { margin-left: 4px; color: #f5c35d; }
 .task-setting-section { margin-top: 17px; padding-top: 16px; border-top: 1px solid var(--tasks-line); }
 .task-setting-section h3 { margin: 0 0 14px; color: var(--tasks-muted); font-size: calc(14px * var(--task-calendar-text-scale)); letter-spacing: .08em; }
 .task-setting-section label {

@@ -40,13 +40,11 @@ test('导航图标保持统一，普通首页标题与导航匹配且仍可操�
         assert.equal(await navIcon.innerHTML(), await titleIcon.innerHTML(), `${name} 两处使用相同造型`)
       }
     }
-    for (const label of ['金币与风格', '数据与设置']) {
+    for (const label of ['羽毛球', '数据与设置']) {
       assert.equal(await navigation.getByRole('button', { name: label }).locator('svg').count(), 1)
     }
     assert.equal(await page.locator('.brand-icon svg').count(), 1)
-    assert.equal(await page.locator('.coin-icon svg').count(), 1)
     assert.equal(await page.getByRole('button', { name: '设置壁纸' }).locator('svg').count(), 1)
-    assert.equal(await page.getByRole('button', { name: /余额 .*￥/ }).count(), 1)
 
     await page.evaluate(() => { document.documentElement.dataset.theme = 'focus' })
     assert.equal(await page.locator('.home-plan .home-heading-icon').evaluate(el => getComputedStyle(el).color),

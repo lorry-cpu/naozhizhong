@@ -7,9 +7,9 @@ import { badmintonMinutes } from '../domain/life'
 import { FONTS, THEMES, type FontId, type ThemeId } from '../domain/rules'
 import { elapsedMs } from '../domain/tasks'
 
-export function SettingsPage({ health, theme, unlocked, onTheme, font, unlockedFonts, onFont }: {
-  health: string; theme: ThemeId; unlocked: ThemeId[]; onTheme: (id: ThemeId) => void
-  font: FontId; unlockedFonts: FontId[]; onFont: (id: FontId) => void
+export function SettingsPage({ health, theme, onTheme, font, onFont }: {
+  health: string; theme: ThemeId; onTheme: (id: ThemeId) => void
+  font: FontId; onFont: (id: FontId) => void
 }) {
   const [tasks, setTasks] = useState<TaskInstance[]>([])
   const [timers, setTimers] = useState<TimerRecord[]>([])
@@ -61,7 +61,7 @@ export function SettingsPage({ health, theme, unlocked, onTheme, font, unlockedF
   }
   async function restore() {
     if (!pending) return
-    if (!window.confirm('恢复会替换当前全部任务、金币、风格、备忘及生活记录。建议先导出当前数据。确定继续？')) return
+    if (!window.confirm('恢复会替换当前全部任务、风格、备忘及生活记录。建议先导出当前数据。确定继续？')) return
     try {
       await importBackup(pending)
       setPending(null)
@@ -70,22 +70,21 @@ export function SettingsPage({ health, theme, unlocked, onTheme, font, unlockedF
   }
   return <>
     <h1>数据与设置</h1><p className="subtitle">数据保存在这台电脑的当前浏览器；定期导出文件便于恢复。</p>
-    <section className="panel"><h2>本机数据</h2><p data-testid="storage-status">{health}</p>
+    <section className="panel"><h2>界面外观</h2>
       <label htmlFor="theme-choice">界面风格</label>
       <select id="theme-choice" value={theme} onChange={e => onTheme(e.target.value as ThemeId)}>
-        {THEMES.map(item => <option key={item.id} value={item.id} disabled={!unlocked.includes(item.id)}>
-          {item.name}{unlocked.includes(item.id) ? '' : '（未兑换）'}</option>)}
+        {THEMES.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select>
       <label htmlFor="font-choice">界面字体</label>
       <select id="font-choice" value={font} onChange={e => onFont(e.target.value as FontId)}>
-        {FONTS.map(item => <option key={item.id} value={item.id} disabled={!unlockedFonts.includes(item.id)}>
-          {item.name}{unlockedFonts.includes(item.id) ? '' : '（请到金币与风格购买）'}</option>)}
+        {FONTS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select>
-      <p className="muted-small">字体可以在“金币与风格”页面预览；思源宋体免费，其余字体每种 200 金币。</p>
+      <p className="muted-small">风格与字体都可自由切换。字体文件按需下载并缓存在本机，缓存不包含在备份文件里。</p>
+    </section>
+    <section className="panel"><h2>本机数据</h2><p data-testid="storage-status">{health}</p>
       <p className="muted-small" data-testid="font-cache">
-        字体文件按需下载并缓存在本机，当前占用
+        字体缓存当前占用
         {fontBytes === null ? '（无法读取）' : ` ${(fontBytes / 1024 / 1024).toFixed(1)} MB`}。
-        字体缓存不包含在备份文件里。
       </p>
       <button type="button" className="button-secondary" disabled={!fontBytes}
         onClick={() => void (async () => {
@@ -108,7 +107,7 @@ export function SettingsPage({ health, theme, unlocked, onTheme, font, unlockedF
       <label htmlFor="backup-file">选择本机 JSON 备份文件</label>
       <input id="backup-file" type="file" accept=".json,application/json" onChange={e => void inspect(e.target.files?.[0])} />
       {pending && <div className="restore-preview"><p>将替换当前全部数据：{pending.data.templates.length} 个任务模板、{pending.data.occurrences.length} 个每日任务、
-        {pending.data.ledger.length} 条金币流水、{pending.data.meals.length} 餐、{pending.data.entertainment.length} 项娱乐、
+        {pending.data.meals.length} 餐、{pending.data.entertainment.length} 项娱乐、
         {pending.data.badminton.length} 次打球、备忘与设置。导出时间：{pending.exportedAt}</p>
         <button className="button-primary" onClick={() => void restore()}>确认替换并恢复</button></div>}
       <p className="muted-small">如果清除了浏览器中此地址的站点数据，需用备份文件恢复。</p>

@@ -53,7 +53,7 @@ test('壁纸通过导航右侧弹窗设置，并覆盖导航栏和所有模块�
     const topbarBackground = await page.locator('.topbar').evaluate(element => getComputedStyle(element).backgroundColor)
     assert.match(topbarBackground, /rgba\(/)
 
-    for (const title of ['备忘录', '今日计划', '饮食计划', '游戏娱乐', '羽毛球', '金币与风格', '数据与设置']) {
+    for (const title of ['备忘录', '今日计划', '饮食计划', '游戏娱乐', '羽毛球', '数据与设置']) {
       await page.getByRole('navigation').getByRole('button', { name: title }).click()
       await page.getByRole('heading', { name: title }).waitFor()
       const state = await wallpaperState(page)

@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { byId, remove, setting, saveSetting, storageHealth, watchChanges } from '../db/database'
 import { FONTS, nextMidnight, localDateKey, type FontId, type ThemeId } from '../domain/rules'
 import { TasksPage } from '../pages/TasksPage'
-import { CoinsPage } from '../pages/CoinsPage'
-import { balance, reconcile } from '../domain/coins'
+import { reconcile } from '../domain/settlement'
 import { FoodPage } from '../pages/FoodPage'
 import { FunPage } from '../pages/FunPage'
 import { BadmintonPage } from '../pages/BadmintonPage'
@@ -22,7 +21,6 @@ export const pages = [
   { id: 'food', title: '饮食计划', icon: 'food' },
   { id: 'fun', title: '游戏娱乐', icon: 'fun' },
   { id: 'badminton', title: '羽毛球', icon: 'badminton' },
-  { id: 'coins', title: '金币与风格', icon: 'coins' },
   { id: 'settings', title: '数据与设置', icon: 'settings' },
 ] as const
 
@@ -46,9 +44,6 @@ export function App() {
   const [font, setFont] = useState<FontId>('source-han-serif')
   const [message, setMessage] = useState('')
   const [health, setHealth] = useState('正在检查本地存储…')
-  const [coins, setCoins] = useState(0)
-  const [unlocked, setUnlocked] = useState<ThemeId[]>(['warm'])
-  const [unlockedFonts, setUnlockedFonts] = useState<FontId[]>(['source-han-serif'])
   const [wallpaper, setWallpaper] = useState<string | null>(null)
   const [wallpaperOpacity, setWallpaperOpacity] = useState(0.35)
   const [wallpaperOpen, setWallpaperOpen] = useState(false)
@@ -129,23 +124,13 @@ export function App() {
     return () => { active = false }
   }, [font])
   useEffect(() => { document.documentElement.dataset.font = font }, [font])
+  // 风格与字体都可以自由切换，不再需要金币或解锁状态。
   useEffect(() => {
     async function refresh() {
       try {
-        const [value, selected, savedFont, cool, focus, ...fontSettings] = await Promise.all([
-          balance(), setting('theme'), setting('font'), byId('settings', 'unlocked:cool'), byId('settings', 'unlocked:focus'),
-          ...FONTS.filter(item => item.id !== 'source-han-serif').map(item => byId('settings', `unlocked:font:${item.id}`)),
-        ])
-        setCoins(value)
-        setUnlocked(['warm', ...(cool?.value === true ? ['cool' as const] : []), ...(focus?.value === true ? ['focus' as const] : [])])
-        if (selected === 'warm' || (selected === 'cool' && cool?.value === true) || (selected === 'focus' && focus?.value === true)) setTheme(selected)
+        const [selected, savedFont] = await Promise.all([setting('theme'), setting('font')])
+        if (selected === 'warm' || selected === 'cool' || selected === 'focus') setTheme(selected)
         if (savedFont && FONTS.some(item => item.id === savedFont)) setFont(savedFont as FontId)
-        setUnlockedFonts([
-          'source-han-serif',
-          ...FONTS.filter(item => item.id !== 'source-han-serif')
-            .filter((_, index) => fontSettings[index]?.value === true)
-            .map(item => item.id),
-        ])
       } catch (error) { setMessage(`读取本地数据失败：${String(error)}`) }
     }
     void refresh()
@@ -183,15 +168,10 @@ export function App() {
     catch (error) { setMessage(`备忘保存失败：${String(error)}`) }
   }
   async function changeTheme(next: ThemeId) {
-    if (!unlocked.includes(next)) { setMessage('请先在金币页面兑换该风格'); return }
     try { await saveSetting('theme', next); setTheme(next); setMessage('风格已保存') }
     catch (error) { setMessage(`风格保存失败：${String(error)}`) }
   }
   async function changeFont(next: FontId) {
-    // 注意：这里不要用 unlockedFonts 做门禁。这个回调既被设置页使用，
-    // 也被金币页在「刚购买完」时调用；那一刻 App 的 unlockedFonts 状态
-    // 还没随刷新更新，用它判断会把刚买到的字体挡回去。
-    // 购买资格由调用方（CoinsPage / SettingsPage）负责校验。
     try {
       await saveSetting('font', next)
       setFont(next)
@@ -292,9 +272,6 @@ export function App() {
           <button className="wallpaper-button" type="button" aria-label="设置壁纸" title="设置壁纸" onClick={() => { setWallpaperMessage(''); setWallpaperOpen(true) }}>
             <AppIcon name="wallpaper" />
           </button>
-          <button className="top-balance" type="button" aria-label={`余额 ${coins}￥`} title="余额" onClick={() => setPage('coins')}>
-            <span className="coin-icon" aria-hidden="true"><AppIcon name="coins" /></span><span>{coins}￥</span>
-          </button>
         </div>
       </header>
       <main className="content" id="main-content">
@@ -306,15 +283,9 @@ export function App() {
         {page === 'home' ? <HomePage memo={memo} onMemo={updateMemo} onSave={() => void persistMemo()} navigate={setPage}
             planArt={planArt} onPickPlanArt={() => { setPlanArtMessage(''); setPlanArtOpen(true) }} />
           : page === 'memo' ? <MemoPage />
-          : page === 'settings' ? <SettingsPage health={health} theme={theme} unlocked={unlocked} onTheme={next => void changeTheme(next)}
-            font={font} unlockedFonts={unlockedFonts}
-            onFont={next => {
-              // 设置页的字体下拉：未购买的字体不允许直接选中。
-              if (!unlockedFonts.includes(next)) { setMessage('请先在金币页面购买该字体'); return }
-              void changeFont(next)
-            }} />
-          : page === 'tasks' ? <TasksPage /> : page === 'coins' ? <CoinsPage current={theme} onTheme={setTheme}
-            currentFont={font} unlockedFonts={unlockedFonts} onFont={next => void changeFont(next)} />
+          : page === 'settings' ? <SettingsPage health={health} theme={theme} onTheme={next => void changeTheme(next)}
+            font={font} onFont={next => void changeFont(next)} />
+          : page === 'tasks' ? <TasksPage />
           : page === 'food' ? <FoodPage /> : page === 'fun' ? <FunPage /> : page === 'badminton' ? <BadmintonPage /> : null}
         {message && <p role="status" className="feedback">{message}</p>}
       </main>

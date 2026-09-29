@@ -69,9 +69,9 @@ test('备忘和风格在刷新及关闭浏览器后仍存在，写入失败有�
   }
 })
 
-// 字体改为运行时下载后新增了 fontBlobs 表，数据库版本从 1 升到 2。
+// 字体改为运行时下载后新增了 fontBlobs 表（v2）；金币机制移除后删掉了 ledger 表（v3）。
 // 老用户升级时不能丢数据，也不能因为重复建索引而卡在升级中。
-test('数据库从 v1 升级到 v2 时保留原有数据并新增字体缓存表', async () => {
+test('数据库从 v1 升级到 v3 时保留原有数据、新增字体表并移除金币表', async () => {
   const profile = await mkdtemp(path.join(tmpdir(), 'rhythm-upgrade-'))
   const server = spawn(process.execPath, ['launcher/serve.cjs', '--no-open'], { cwd: process.cwd() })
   let context
@@ -120,10 +120,11 @@ test('数据库从 v1 升级到 v2 时保留原有数据并新增字体缓存表
         const request = db.transaction('settings').objectStore('settings').get('memo')
         request.onsuccess = () => resolve(request.result?.value)
       })
-      return { version: db.version, hasFontBlobs: stores.includes('fontBlobs'), memo }
+      return { version: db.version, hasFontBlobs: stores.includes('fontBlobs'), hasLedger: stores.includes('ledger'), memo }
     })
-    assert.equal(state.version, 2, '数据库已升级到 v2')
+    assert.equal(state.version, 3, '数据库已升级到 v3')
     assert.equal(state.hasFontBlobs, true, '新增字体缓存表')
+    assert.equal(state.hasLedger, false, '金币流水表已随金币机制移除')
     assert.equal(state.memo, '升级前的备忘', '升级后原有数据仍在')
   } finally {
     await context?.close()

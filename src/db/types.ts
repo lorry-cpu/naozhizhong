@@ -21,19 +21,16 @@ export interface TaskInstance {
   status: 'pending' | 'settled' | 'cancelled'
   percentage: number | null
   settledAt: number | null
+  /**
+   * 已废弃：金币机制移除前用于记录结算金额。
+   * 保留字段是为了能直接读入老数据而不报错，新记录一律写 null。
+   */
   payout: number | null
 }
 export interface TimerRecord {
   id: string
   accumulatedMs: number
   startedAt: number | null
-}
-export interface CoinEntry {
-  id: string
-  sourceKey: string
-  amount: number
-  at: number
-  reason: string
 }
 export interface Meal {
   id: string
@@ -76,7 +73,6 @@ export interface Tables {
   templates: TaskTemplate
   occurrences: TaskInstance
   timers: TimerRecord
-  ledger: CoinEntry
   meals: Meal
   entertainment: Entertainment
   badminton: Badminton

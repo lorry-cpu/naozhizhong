@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import { all, setting, saveSetting, watchChanges } from '../db/database'
 import type { TaskInstance, TaskTemplate, TimerRecord } from '../db/types'
-import { localDateKey, nextMidnight, payoutFor, rewardCap } from '../domain/rules'
+import { localDateKey, nextMidnight } from '../domain/rules'
 import { cancelTask, changeRepeat, createTask, elapsedMs, materializeThrough, pauseTimer, startTimer, stopRepeating, updateTask } from '../domain/tasks'
-import { settleTask } from '../domain/coins'
+import { settleTask } from '../domain/settlement'
 import { exportBackup } from '../db/backup'
 import { taskCsv, taskIcs, taskJson, type TaskExport } from '../domain/taskExport'
 import { normalizeTextSize, normalizeTextTone, textToneOptions, type TextTone } from '../domain/calendarSettings'
@@ -182,7 +182,6 @@ export function TasksPage() {
 
   const currentItems = useMemo(() => items.filter(item => item.date === date && item.status !== 'cancelled').sort((a, b) => a.time.localeCompare(b.time)), [date, items])
   const visibleItems = useMemo(() => items.filter(item => item.status !== 'cancelled' && (!settings.hideCompleted || item.status !== 'settled')), [items, settings.hideCompleted])
-  const preview = Number.isSafeInteger(form.minutes) && form.minutes > 0 ? rewardCap(form.minutes, form.difficulty) : null
   const glassStrength = Math.min(1, Math.max(0, settings.blur / 48))
   const glassFill = Math.min(1, Math.max(0, settings.opacity / 100))
   const appStyle = {
@@ -350,7 +349,7 @@ export function TasksPage() {
     const repeat = templates[item.templateId]?.repeat
     return <div className={`tasks-day-row task-row ${item.status === 'settled' ? 'settled' : ''}`} key={item.id} style={{ '--task-accent': difficultyColors[item.difficulty] } as CSSProperties}>
       <button type="button" className="task-row-check" aria-label={`${item.status === 'settled' ? '已完成' : '标记完成'} ${item.title}`} onClick={() => { if (item.status === 'pending') { setPunch(item); setPercentage(100) } }}>{item.status === 'settled' ? '✓' : '○'}</button>
-      <div className="tasks-day-row-main task-detail"><strong>{item.title}</strong><small>{difficultyLabels[item.difficulty]} · 预计 {item.minutes} 分钟 · 已计时 {formatted}</small>{item.status === 'settled' && <small>已结算 {item.percentage}% · {item.payout} 金币</small>}</div>
+      <div className="tasks-day-row-main task-detail"><strong>{item.title}</strong><small>{difficultyLabels[item.difficulty]} · 预计 {item.minutes} 分钟 · 已计时 {formatted}</small>{item.status === 'settled' && <small>{item.percentage === 0 ? '到期未完成' : `已完成 ${item.percentage}%`}</small>}</div>
       <time>{item.time}</time><span className="task-difficulty-label" style={{ color: difficultyColors[item.difficulty] }}>{difficultyLabels[item.difficulty]}</span>
       {item.status === 'pending' && <div className="tasks-row-actions">
         <button type="button" className="button-secondary" onClick={() => void attempt(() => timer?.startedAt !== null && timer?.startedAt !== undefined ? pauseTimer(item.id) : startTimer(item.id))}>{timer?.startedAt !== null && timer?.startedAt !== undefined ? '暂停计时' : elapsed > 0 ? '继续计时' : '开始计时'}</button>
@@ -382,7 +381,7 @@ export function TasksPage() {
     {message && <p role="status" className="feedback">{message}</p>}{error && <p role="alert" className="error">{error}</p>}
 
     {formOpen && <div className="dialog-backdrop" role="presentation"><section className="dialog task-dialog" role="dialog" aria-modal="true" aria-label={editing ? '编辑计划' : '新增待办'}>
-      <div className="dialog-header"><div><h2>{editing ? '编辑计划' : '新增待办'}</h2><p className="muted-small">安排一件计划，完成后按比例结算金币。</p></div><button className="button-secondary dialog-close" type="button" aria-label="关闭新增窗口" onClick={() => setFormOpen(false)}>×</button></div>
+      <div className="dialog-header"><div><h2>{editing ? '编辑计划' : '新增待办'}</h2><p className="muted-small">安排一件计划，完成后可以打卡记录完成比例。</p></div><button className="button-secondary dialog-close" type="button" aria-label="关闭新增窗口" onClick={() => setFormOpen(false)}>×</button></div>
       <form onSubmit={event => void submit(event)} className="task-form"><label className="task-form-wide">内容<input required autoFocus value={form.title} onChange={event => setForm({ ...form, title: event.target.value })} placeholder="例如：阅读专业资料" /></label>
         <div className="task-form-two"><label>日期<input type="date" required min={editing ? undefined : today()} disabled={Boolean(editing)} value={form.startDate} onChange={event => setForm({ ...form, startDate: event.target.value })} /></label><label>开始时间<input type="time" required value={form.time} onChange={event => setForm({ ...form, time: event.target.value })} /></label></div>
         <div className={`task-form-detail-grid ${editing ? 'task-form-detail-grid-two' : 'task-form-detail-grid-three'}`}>
@@ -390,7 +389,7 @@ export function TasksPage() {
           <label>难度<select aria-label="难度" value={form.difficulty} onChange={event => setForm({ ...form, difficulty: event.target.value as Form['difficulty'] })}><option value="easy">简单</option><option value="medium">中等</option><option value="hard">困难</option></select></label>
           {!editing && <label>重复<select aria-label="重复" value={form.repeat} onChange={event => setForm({ ...form, repeat: event.target.value as Form['repeat'] })}><option value="none">不重复</option><option value="daily">每天</option><option value="weekly">每周</option></select></label>}
         </div>
-        <p className="task-reward-preview">完成 100% 可获得 <strong>{preview ?? '—'} 金币</strong></p>{error && <p role="alert" className="error">{error}</p>}<div className="dialog-actions"><button className="button-secondary" type="button" onClick={() => setFormOpen(false)}>取消</button><button aria-label="保存任务" className="button-primary" type="submit">添加</button></div>
+        {error && <p role="alert" className="error">{error}</p>}<div className="dialog-actions"><button className="button-secondary" type="button" onClick={() => setFormOpen(false)}>取消</button><button aria-label="保存任务" className="button-primary" type="submit">添加</button></div>
       </form>
     </section></div>}
 
@@ -403,7 +402,7 @@ export function TasksPage() {
       <div className="dialog-actions"><button className="button-primary" type="button" onClick={() => setSettingsOpen(false)}>完成</button></div>
     </section></div>}
 
-    {punch && <div className="dialog-backdrop" role="presentation"><section className="dialog" role="dialog" aria-modal="true" aria-label="任务打卡"><h2>任务打卡 · {punch.title}</h2><label>完成比例：{percentage}%<input type="range" min="0" max="100" step="1" value={percentage} onChange={event => setPercentage(Number(event.target.value))} /></label><p>预计结算：{payoutFor(rewardCap(punch.minutes, punch.difficulty), percentage)} 金币</p>{error && <p role="alert" className="error">{error}</p>}<div className="dialog-actions"><button type="button" className="button-primary" onClick={() => void attempt(async () => { await settleTask(punch.id, percentage); setPunch(null) })}>确认打卡</button><button type="button" className="button-secondary" onClick={() => setPunch(null)}>返回</button></div></section></div>}
+    {punch && <div className="dialog-backdrop" role="presentation"><section className="dialog" role="dialog" aria-modal="true" aria-label="任务打卡"><h2>任务打卡 · {punch.title}</h2><label>完成比例：{percentage}%<input aria-label="完成比例" type="range" min="0" max="100" step="1" value={percentage} onChange={event => setPercentage(Number(event.target.value))} /></label><p className="muted-small">只记录完成情况，不再计算金币。</p>{error && <p role="alert" className="error">{error}</p>}<div className="dialog-actions"><button type="button" className="button-primary" onClick={() => void attempt(async () => { await settleTask(punch.id, percentage); setPunch(null) })}>确认打卡</button><button type="button" className="button-secondary" onClick={() => setPunch(null)}>返回</button></div></section></div>}
 
     {schedule && <div className="dialog-backdrop" role="presentation"><section className="dialog" role="dialog" aria-modal="true" aria-label="调整后续重复"><h2>调整“{schedule.title}”后续安排</h2><p className="muted-small">已结算的历史记录会保留。</p><label>生效日期<input aria-label="生效日期" type="date" min={localDateKey(new Date(nextMidnight(today())))} value={scheduleFrom} onChange={event => setScheduleFrom(event.target.value)} /></label><label>后续重复<select aria-label="后续重复" value={scheduleRepeat} onChange={event => setScheduleRepeat(event.target.value as 'daily' | 'weekly')}><option value="daily">每天</option><option value="weekly">每周</option></select></label>{error && <p role="alert" className="error">{error}</p>}<div className="dialog-actions"><button className="button-primary" onClick={() => void attempt(async () => { await changeRepeat(schedule.templateId, scheduleRepeat, scheduleFrom); setSchedule(null) })}>保存后续规则</button><button className="button-secondary" onClick={() => setSchedule(null)}>返回</button></div></section></div>}
   </div>

@@ -1,11 +1,17 @@
 import { all, announceChange, openDatabase, requestValue, TABLES, transactionDone } from './database'
 import type { Tables, TableName, TaskInstance } from './types'
-import { FONTS, localMidnight, payoutFor, rewardCap } from '../domain/rules'
+import { FONTS, localMidnight } from '../domain/rules'
 import { validateBadminton, validateEntertainment, validateMeal } from '../domain/life'
 import { validateTask } from '../domain/tasks'
 
 export type BackupData = { [K in TableName]: Tables[K][] }
-export interface Backup { version: 1; exportedAt: string; data: BackupData }
+/**
+ * 备份格式版本。
+ * v1：包含 ledger（金币流水）——金币机制已移除，不再支持导入。
+ * v2：当前格式，任务只记录完成比例。
+ */
+export const BACKUP_VERSION = 2
+export interface Backup { version: 2; exportedAt: string; data: BackupData }
 export async function exportBackup(): Promise<Backup> {
   // A read transaction gives one coherent snapshot of every table.
   const db = await openDatabase()
@@ -15,7 +21,7 @@ export async function exportBackup(): Promise<Backup> {
   const values = await Promise.all(requests)
   await done
   const data = Object.fromEntries(TABLES.map((name, index) => [name, values[index]])) as BackupData
-  return { version: 1, exportedAt: new Date().toISOString(), data }
+  return { version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data }
 }
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('备份包含无效记录')
@@ -33,14 +39,18 @@ function uniqueRows(records: unknown[], key: string) {
 }
 export function parseBackup(input: unknown): Backup {
   const root = object(input)
-  if (root.version !== 1 || !text(root.exportedAt) || !numeric(Date.parse(root.exportedAt))) throw new Error('备份版本或导出时间无效')
+  if (root.version !== BACKUP_VERSION) {
+    throw new Error(root.version === 1
+      ? '这是旧版备份（含金币记录），当前版本已不再支持导入'
+      : '备份版本或导出时间无效')
+  }
+  if (!text(root.exportedAt) || !numeric(Date.parse(root.exportedAt))) throw new Error('备份版本或导出时间无效')
   const raw = object(root.data)
   for (const name of TABLES) {
     if (!Array.isArray(raw[name]) || raw[name].length > 100000) throw new Error(`备份的 ${name} 表无效`)
     uniqueRows(raw[name], name === 'settings' ? 'key' : 'id')
   }
   const data = raw as unknown as BackupData
-  uniqueRows(data.ledger, 'sourceKey')
   for (const row of data.templates) {
     validateTask(row.title, row.startDate, row.time, row.minutes, row.difficulty, row.repeat)
     if (row.endDate !== null) localMidnight(row.endDate)
@@ -57,24 +67,15 @@ export function parseBackup(input: unknown): Backup {
     days.add(pair)
     if (!['pending', 'settled', 'cancelled'].includes(row.status)) throw new Error('任务状态无效')
     if (row.status === 'settled') {
-      if (!numeric(row.settledAt) || typeof row.percentage !== 'number' || !Number.isSafeInteger(row.percentage) || row.percentage < 0 || row.percentage > 100 ||
-        row.payout !== payoutFor(rewardCap(row.minutes, row.difficulty), row.percentage)) throw new Error('任务结算记录无效')
-    } else if (row.percentage !== null || row.payout !== null || row.settledAt !== null) throw new Error('未结算任务包含结算数值')
+      if (!numeric(row.settledAt) || typeof row.percentage !== 'number' || !Number.isSafeInteger(row.percentage) || row.percentage < 0 || row.percentage > 100) {
+        throw new Error('任务结算记录无效')
+      }
+    } else if (row.percentage !== null || row.settledAt !== null) throw new Error('未结算任务包含结算数值')
     instances.set(row.id, row)
   }
   for (const timer of data.timers) {
     if (!instances.has(timer.id) || !numeric(timer.accumulatedMs) || timer.accumulatedMs < 0 ||
       (timer.startedAt !== null && !numeric(timer.startedAt))) throw new Error('计时记录无效')
-  }
-  for (const entry of data.ledger) {
-    if (!text(entry.sourceKey) || !text(entry.reason) || !Number.isSafeInteger(entry.amount) || !numeric(entry.at)) throw new Error('金币明细无效')
-    if (entry.sourceKey.startsWith('task:')) {
-      const row = instances.get(entry.sourceKey.slice(5))
-      if (!row || row.status !== 'settled' || row.payout !== entry.amount) throw new Error('金币明细与任务结算不一致')
-    }
-  }
-  for (const row of instances.values()) {
-    if (row.status === 'settled' && !data.ledger.some(e => e.sourceKey === `task:${row.id}`)) throw new Error('已结算任务缺少金币流水')
   }
   for (const row of data.meals) validateMeal(row)
   for (const row of data.entertainment) validateEntertainment(row)

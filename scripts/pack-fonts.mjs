@@ -25,11 +25,8 @@ const fontsDir = path.join(root, 'public', 'fonts')
 const outDir = path.join(root, 'release')
 
 // 与 src/domain/rules.ts 的 FONTS 对应；独立列出以便缺文件时指名道姓。
-const expected = [
-  'fangsong', 'kaiti', 'handbook', 'source-han-sans', 'minimal', 'handwrite',
-  'source-han-serif', 'chaozi', 'dunhuang', 'hefeng', 'yongzi', 'yange',
-  'shangshou', 'mengqingjiang', 'tianwangxing',
-]
+// 只保留开源字体（SIL OFL 1.1）：商业字体授权不允许公开分发，已移除。
+const expected = ['source-han-serif', 'source-han-sans']
 
 const checkOnly = process.argv.includes('--check')
 

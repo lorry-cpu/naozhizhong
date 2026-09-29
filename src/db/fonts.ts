@@ -9,21 +9,8 @@ import type { FontBlob } from './types'
  * 因此这里必须与 CSS 里引用的名字保持一致。
  */
 const familyNames: Record<FontId, string> = {
-  'fangsong': 'NaoFangSong',
-  'kaiti': 'NaoKaiTi',
-  'handbook': 'NaoHandbook',
-  'source-han-sans': 'NaoSourceHanSans',
-  'minimal': 'NaoMinimal',
-  'handwrite': 'NaoHandwrite',
   'source-han-serif': 'NaoSourceHanSerif',
-  'chaozi': 'NaoChaozi',
-  'dunhuang': 'NaoDunhuang',
-  'hefeng': 'NaoHefeng',
-  'yongzi': 'NaoYongzi',
-  'yange': 'NaoYange',
-  'shangshou': 'NaoShangshou',
-  'mengqingjiang': 'NaoMengqingjiang',
-  'tianwangxing': 'NaoTianwangxing',
+  'source-han-sans': 'NaoSourceHanSans',
 }
 
 /** 可变字重字体需要在 @font-face 里声明范围，与原来 CSS 中的写法一致。 */

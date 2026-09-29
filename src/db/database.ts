@@ -1,13 +1,14 @@
 import type { Setting, TableName, Tables } from './types'
 
 export const DB_NAME = 'personal-rhythm-v1'
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 /**
- * 参与备份／恢复的表。fontBlobs 刻意排除在外：
- * 字体是可重新下载的缓存，体积大（单个最大约 27MB），
- * 放进 JSON 备份会让备份文件难以使用。
+ * 参与备份／恢复的表。
+ * - ledger（金币流水）已随金币机制一并移除
+ * - fontBlobs 刻意排除在外：字体是可重新下载的缓存，体积大（单个最大约 27MB），
+ *   放进 JSON 备份会让备份文件难以使用。
  */
-export const TABLES: TableName[] = ['templates', 'occurrences', 'timers', 'ledger', 'meals', 'entertainment', 'badminton', 'settings']
+export const TABLES: TableName[] = ['templates', 'occurrences', 'timers', 'meals', 'entertainment', 'badminton', 'settings']
 let cached: Promise<IDBDatabase> | null = null
 const channel = typeof window === 'undefined' || typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('personal-rhythm-changes')
 
@@ -22,11 +23,11 @@ export function openDatabase(): Promise<IDBDatabase> {
         if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, { keyPath: name === 'settings' ? 'key' : 'id' })
       }
       if (!db.objectStoreNames.contains('fontBlobs')) db.createObjectStore('fontBlobs', { keyPath: 'id' })
-      // 索引只在缺失时创建：v1 升级到 v2 时它们已存在，重复创建会抛错。
+      // 金币机制已移除：老库里的 ledger 表一并删掉，避免留下无用的历史数据。
+      if (db.objectStoreNames.contains('ledger')) db.deleteObjectStore('ledger')
+      // 索引只在缺失时创建：升级时它们通常已存在，重复创建会抛错。
       const occurrences = transaction.objectStore('occurrences')
       if (!occurrences.indexNames.contains('date')) occurrences.createIndex('date', 'date')
-      const ledger = transaction.objectStore('ledger')
-      if (!ledger.indexNames.contains('sourceKey')) ledger.createIndex('sourceKey', 'sourceKey', { unique: true })
     }
     request.onsuccess = () => {
       request.result.onversionchange = () => { request.result.close(); cached = null }

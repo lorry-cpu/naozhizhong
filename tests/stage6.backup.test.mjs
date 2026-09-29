@@ -43,7 +43,7 @@ test('首页真实摘要和完整备份；无效文件、导入故障保留旧�
     await page.getByText('备份任务', { exact: true }).waitFor()
     await page.getByRole('button', { name: '打卡' }).click()
     await page.getByRole('button', { name: '确认打卡' }).click()
-    await page.getByText(/已结算 100%/).waitFor()
+    await page.getByText(/已完成 100%/).waitFor()
     await page.getByRole('button', { name: '闹之钟，返回首页总览' }).click()
     await page.getByText('1 / 1 项已结算').waitFor()
     assert.match(await page.locator('#main-content').innerText(), /备份午餐[\s\S]*备份娱乐[\s\S]*2 个球/)
@@ -53,9 +53,9 @@ test('首页真实摘要和完整备份；无效文件、导入故障保留旧�
     await page.getByRole('button', { name: '导出完整备份' }).click()
     const download = await downloadPromise
     const backup = JSON.parse(await readFile(await download.path(), 'utf8'))
-    assert.deepEqual(Object.keys(backup.data).sort(), ['badminton','entertainment','ledger','meals','occurrences','settings','templates','timers'].sort())
+    assert.deepEqual(Object.keys(backup.data).sort(), ['badminton','entertainment','meals','occurrences','settings','templates','timers'].sort())
+    assert.equal(backup.version, 2, '备份格式为 v2（不含金币流水）')
     assert.equal(backup.data.meals[0].spent, 19.8)
-    assert.equal(backup.data.ledger.length, 1)
     const file = page.locator('#backup-file')
     await file.setInputFiles({ name: 'wrong.json', mimeType: 'application/json', buffer: Buffer.from('{"version":99}') })
     await page.getByRole('status').getByText(/备份无效，原数据未改变/).waitFor()
@@ -79,8 +79,8 @@ test('首页真实摘要和完整备份；无效文件、导入故障保留旧�
     // Alter current data to verify that importing really replaces all records.
     await page.evaluate(async () => {
       const db = await new Promise(resolve => { const r=indexedDB.open('personal-rhythm-v1'); r.onsuccess=()=>resolve(r.result) })
-      await new Promise(resolve => { const tx=db.transaction(['meals','entertainment','badminton','occurrences','ledger','templates','settings','timers'], 'readwrite')
-        for (const name of ['meals','entertainment','badminton','occurrences','ledger','templates','settings','timers']) tx.objectStore(name).clear()
+      await new Promise(resolve => { const tx=db.transaction(['meals','entertainment','badminton','occurrences','templates','settings','timers'], 'readwrite')
+        for (const name of ['meals','entertainment','badminton','occurrences','templates','settings','timers']) tx.objectStore(name).clear()
         tx.oncomplete=resolve
       })
     })
@@ -91,8 +91,6 @@ test('首页真实摘要和完整备份；无效文件、导入故障保留旧�
     await page.waitForFunction(() => document.querySelector('#quick-memo')?.value === '备份可恢复')
     await page.getByText('1 / 1 项已结算').waitFor()
     assert.match(await page.locator('#main-content').innerText(), /备份午餐[\s\S]*备份娱乐[\s\S]*2 个球/)
-    await page.getByRole('navigation').getByRole('button', { name: '金币与风格' }).click()
-    await page.getByText('当前余额：6 金币').waitFor()
   } finally {
     await context?.close()
     server.kill()

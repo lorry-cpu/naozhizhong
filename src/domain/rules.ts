@@ -1,67 +1,22 @@
 export type Difficulty = 'easy' | 'medium' | 'hard'
 export type ThemeId = 'warm' | 'cool' | 'focus'
-export type FontId =
-  | 'fangsong'
-  | 'kaiti'
-  | 'handbook'
-  | 'source-han-sans'
-  | 'minimal'
-  | 'handwrite'
-  | 'source-han-serif'
-  | 'chaozi'
-  | 'dunhuang'
-  | 'hefeng'
-  | 'yongzi'
-  | 'yange'
-  | 'shangshou'
-  | 'mengqingjiang'
-  | 'tianwangxing'
+/**
+ * 只保留开源字体（SIL OFL 1.1），可以随仓库/Release 自由分发。
+ * 商业字体（汉仪、潮字社、上首等）已移除：它们的授权不允许公开分发。
+ */
+export type FontId = 'source-han-serif' | 'source-han-sans'
 export type RepeatRule = 'none' | 'daily' | 'weekly'
 
-export const THEMES: ReadonlyArray<{ id: ThemeId; name: string; price: number }> = [
-  { id: 'warm', name: '温暖日常', price: 0 },
-  { id: 'cool', name: '清爽冷调', price: 90 },
-  { id: 'focus', name: '专注简约', price: 160 },
+export const THEMES: ReadonlyArray<{ id: ThemeId; name: string }> = [
+  { id: 'warm', name: '温暖日常' },
+  { id: 'cool', name: '清爽冷调' },
+  { id: 'focus', name: '专注简约' },
 ]
 
-export const FONTS: ReadonlyArray<{ id: FontId; name: string; price: number; preview: string }> = [
-  { id: 'fangsong', name: '仿宋体', price: 200, preview: '清晰端正，适合每天使用。' },
-  { id: 'kaiti', name: '楷体', price: 200, preview: '一笔一画，温和有序。' },
-  { id: 'handbook', name: '手帐风格 · 华文行楷', price: 200, preview: '写下今天的小目标。' },
-  { id: 'source-han-sans', name: '思源黑体', price: 200, preview: '简洁现代，阅读轻松。' },
-  { id: 'minimal', name: '极简风格 · 等线', price: 200, preview: '专注当下，保持节奏。' },
-  { id: 'handwrite', name: '手写体 · 华文隶书', price: 200, preview: '把生活写成自己的样子。' },
-  { id: 'source-han-serif', name: '思源宋体', price: 0, preview: '沉静阅读，慢慢积累。' },
-  { id: 'chaozi', name: '潮字社放浪简', price: 200, preview: '自由舒展，写出鲜明个性。' },
-  { id: 'dunhuang', name: '敦煌飞天楷', price: 200, preview: '古意流转，端庄而灵动。' },
-  { id: 'hefeng', name: '和风书道昭和银龙·传神', price: 200, preview: '落笔有势，书写更有气韵。' },
-  { id: 'yongzi', name: '汉仪永字流云隶', price: 200, preview: '隶意舒朗，日常记录也从容。' },
-  { id: 'yange', name: 'Aa燕歌行', price: 200, preview: '轻盈有致，让页面更有风格。' },
-  { id: 'shangshou', name: '上首仙墨书法体', price: 200, preview: '墨色纵横，适合醒目的标题。' },
-  { id: 'mengqingjiang', name: '汉仪孟庆江行书', price: 200, preview: '行云流水，记录每个念头。' },
-  { id: 'tianwangxing', name: '天王星像素', price: 200, preview: '像素清晰，带来轻巧的科技感。' },
+export const FONTS: ReadonlyArray<{ id: FontId; name: string; preview: string }> = [
+  { id: 'source-han-serif', name: '思源宋体', preview: '沉静阅读，慢慢积累。' },
+  { id: 'source-han-sans', name: '思源黑体', preview: '简洁现代，阅读轻松。' },
 ]
-
-const difficultyRates: Record<Difficulty, number> = {
-  easy: 6,
-  medium: 10,
-  hard: 14,
-}
-
-export function rewardCap(minutes: number, difficulty: Difficulty): number {
-  if (!Number.isSafeInteger(minutes) || minutes <= 0) throw new Error('预计用时须为正整数分钟')
-  if (!(difficulty in difficultyRates)) throw new Error('请选择正确的难度')
-  return Math.ceil(minutes / 30) * difficultyRates[difficulty]
-}
-
-export function payoutFor(cap: number, percentage: number): number {
-  if (!Number.isSafeInteger(cap) || cap <= 0) throw new Error('金币满额须为正整数')
-  if (!Number.isSafeInteger(percentage) || percentage < 0 || percentage > 100) {
-    throw new Error('完成比例须为 0～100 的整数')
-  }
-  if (percentage >= 50) return Math.round(cap * percentage / 100)
-  return -Math.max(1, Math.round(cap * (1 - 2 * percentage / 100)))
-}
 
 export function localDateKey(date: Date): string {
   const year = date.getFullYear()
