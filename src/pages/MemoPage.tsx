@@ -11,6 +11,7 @@ import {
   rangeFor,
   shortWeekdayNames,
   todayKey,
+  useLifeDateSelection,
   weekdayNames,
   type LifeViewMode,
 } from '../components/LifeCalendarShell'
@@ -58,6 +59,8 @@ export function MemoPage() {
 
   const recordsFor = (targetDate: string) => records.filter(record => record.date === targetDate)
   const range = rangeFor(date, mode)
+  // 月／周视图点某天：选中并跳到日视图（与「今日计划」一致）。
+  const selectDate = useLifeDateSelection(setDate, setMode, mode)
   const renderChip = (record: { date: string; text: string }) =>
     <button type="button" className="task-calendar-chip compact memo-calendar-chip" onClick={() => setDate(record.date)}
       title={record.text} aria-label={`${record.date} ${record.text}`}>
@@ -79,7 +82,7 @@ export function MemoPage() {
         const dayDate = parseDate(day)
         const dayRecords = recordsFor(day)
         return <div key={day} className={`tasks-month-cell calendar-day ${day.startsWith(month) ? '' : 'outside'} ${day === date ? 'selected' : ''} ${day === todayKey() ? 'today' : ''}`} aria-label={day}>
-          <button className="tasks-cell-date" type="button" aria-label={day} onClick={() => setDate(day)}><strong>{dayDate.getDate()}</strong><small>{day === todayKey() ? '今天' : ''}</small></button>
+          <button className="tasks-cell-date" type="button" aria-label={day} onClick={() => selectDate(day)}><strong>{dayDate.getDate()}</strong><small>{day === todayKey() ? '今天' : ''}</small></button>
           <div className="tasks-cell-items">{dayRecords.slice(0, 3).map(renderChip)}{dayRecords.length > 3 && <small className="tasks-more">还有 {dayRecords.length - 3} 条</small>}</div>
         </div>
       })}</div>
@@ -93,7 +96,7 @@ export function MemoPage() {
         const dayDate = parseDate(day)
         const dayRecords = recordsFor(day)
         return <div key={day} className={`tasks-week-column ${day === date ? 'selected' : ''} ${day === todayKey() ? 'today' : ''}`}>
-          <button type="button" className="tasks-week-heading" onClick={() => setDate(day)}><span>{weekdayNames[dayDate.getDay()]}</span><strong>{dayDate.getDate()}</strong></button>
+          <button type="button" className="tasks-week-heading" onClick={() => selectDate(day)}><span>{weekdayNames[dayDate.getDay()]}</span><strong>{dayDate.getDate()}</strong></button>
           <div className="tasks-week-items">{dayRecords.map(renderChip)}</div>
         </div>
       })}

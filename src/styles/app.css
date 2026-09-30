@@ -887,15 +887,28 @@ button:disabled { cursor: default; opacity: .65; }
   white-space: nowrap;
 }
 .home-note-food .home-poster-title,
-.home-note-ball .home-poster-title {
-  margin: 0 0 22px;
+.home-note-ball .home-poster-title,
+.home-note-fun .home-poster-title {
+  flex: none;
+  margin: 0;
   font-size: clamp(22px, 2.1vw, 27px);
   font-weight: 700;
   letter-spacing: .05em;
   line-height: 1.3;
 }
+/* 底部入口钉在卡片下沿：正文多少都不改变它的位置。 */
+.home-note-food .button-link,
+.home-note-ball .button-link,
+.home-note-fun .button-link { flex: none; }
 .home-note-food .home-note-body,
-.home-note-ball .home-note-body { margin: 0 0 14px; }
+.home-note-ball .home-note-body { margin: 0; }
+/* 标题、正文、底部入口之间的间距统一由容器的 gap 决定：
+   正文为空时也不会因为「最后一行没有 margin」而让卡片变矮。 */
+.home-note-food .home-food-copy,
+.home-note-ball .home-sport-copy,
+.home-note-fun .home-fun-copy {
+  gap: 14px;
+}
 .home-note-food .home-note-body .home-line,
 .home-note-ball .home-note-body .home-line { line-height: 1.7; }
 .home-note-food .home-note-empty,
@@ -1123,15 +1136,46 @@ button:disabled { cursor: default; opacity: .65; }
   text-shadow: 0 1px 1px rgba(255, 249, 228, .42);
 }
 .home-note-fun .home-poster-title {
-  margin: 0 0 22px;
+  flex: none;
+  margin: 0;
   color: var(--fun-ink);
   font-size: clamp(22px, 2.1vw, 27px);
   font-weight: 700;
   letter-spacing: .05em;
   line-height: 1.3;
 }
-.home-note-fun .home-note-body { margin: 0 0 14px; }
+.home-note-fun .home-note-body { margin: 0; }
 .home-note-fun .home-note-body .home-line { line-height: 1.7; }
+/* 摘要卡片固定尺寸：标题钉在顶部、「饮食计划 →」钉在底部，中间正文区
+   高度固定。正文最多 3 条 + 1 行「还有 N 条…」，多出来的用省略号截断，
+   所以卡片高度与当天记录多少完全无关。 */
+.home-note-scroll {
+  /* 固定 4 行高度（3 条正文 + 1 行汇总／省略），行高 1.7、行距 6px。
+     用 height 而不是 max-height：正文少时也占同样高度，卡片不会变矮。 */
+  flex: none;
+  height: calc(4 * 1.7em + 3 * 6px);
+  min-height: 0;
+  overflow: hidden;
+}
+.home-note-food .home-note-scroll,
+.home-note-ball .home-note-scroll,
+.home-note-fun .home-note-scroll {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 6px;
+}
+.home-note-scroll .home-line {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.home-note-scroll .home-more-line {
+  flex: none;
+  color: var(--home-accent, currentColor);
+  opacity: .82;
+}
 .home-note-fun .home-note-empty,
 .home-note-fun .home-note-body .home-line strong,
 .home-note-fun .home-note-body .muted-small { color: var(--fun-ink); }
@@ -1139,14 +1183,16 @@ button:disabled { cursor: default; opacity: .65; }
 .home-note-fun .home-note-body .muted-small { color: rgba(44, 53, 87, .76); }
 .home .home-note-fun .button-link {
   align-self: flex-start;
+  flex: none;
   margin-top: auto;
   padding: 5px 0;
-  color: var(--fun-ink);
+  /* 底部入口落在插画的深色地毯上，用白色字直接压住背景。 */
+  color: #fff;
   font-size: 14px;
   line-height: 1.4;
   text-underline-offset: 4px;
 }
-.home .home-note-fun .button-link:focus-visible { outline-color: var(--fun-ink); }
+.home .home-note-fun .button-link:focus-visible { outline-color: #fff; }
 @media (max-width: 620px) {
   .home-sheet.home-note-fun { min-height: 292px; padding: 11px; }
   .home-note-fun .home-fun-copy { min-height: 268px; width: min(64%, 280px); padding: 20px 13px 13px; }
@@ -1502,6 +1548,7 @@ button:disabled { cursor: default; opacity: .65; }
 .tasks-cell-date small { color: var(--tasks-dim); font-size: calc(11px * var(--task-calendar-text-scale)); }
 .tasks-cell-items {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 4px;
   margin-top: 8px;
 }
@@ -1551,10 +1598,17 @@ button:disabled { cursor: default; opacity: .65; }
   font-size: calc(10px * var(--task-calendar-text-scale));
 }
 .tasks-week-view { padding-top: 8px; }
-.tasks-week-grid { gap: 8px; min-height: 530px; }
+/* 固定高度：周视图是「一屏一周」，不随条目多少长高。 */
+.tasks-week-grid { gap: 8px; height: 530px; }
+/* 周视图本身是一格一格的固定高度：内容再多也不许顶破日历框。
+   条目数由组件的 weekColumnSlice 控制，这里再用 overflow 兜底裁切，
+   保证任何极端数据下都不会溢出到框外。 */
 .tasks-week-column {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   padding: 8px 7px 12px;
+  overflow: hidden;
   border-left: 1px solid var(--tasks-line);
   border-radius: 11px;
 }
@@ -1573,7 +1627,16 @@ button:disabled { cursor: default; opacity: .65; }
 }
 .tasks-week-heading strong { color: var(--tasks-ink); font-size: calc(22px * var(--task-calendar-text-scale)); }
 .tasks-week-column.today .tasks-week-heading strong { color: #f5be48; }
-.tasks-week-items { display: grid; gap: 7px; }
+.tasks-week-items {
+  display: grid;
+  /* 单列：条目和「还有 N 条」提示各占一行，提示不会被挤成窄窄一条。 */
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  align-content: start;
+  gap: 7px;
+  min-height: 0;
+  overflow: hidden;
+}
 .tasks-week-items .task-calendar-chip { min-height: 42px; align-items: flex-start; }
 .tasks-day-view { min-height: 530px; padding: 28px 6px 12px; }
 .tasks-day-heading {

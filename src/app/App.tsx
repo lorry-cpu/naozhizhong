@@ -16,8 +16,8 @@ import { AppIcon } from '../components/AppIcon'
 
 export const pages = [
   { id: 'home', title: '首页总览', icon: 'clock' },
-  { id: 'memo', title: '备忘录', icon: 'memo' },
   { id: 'tasks', title: '今日计划', icon: 'tasks' },
+  { id: 'memo', title: '备忘录', icon: 'memo' },
   { id: 'food', title: '饮食计划', icon: 'food' },
   { id: 'fun', title: '游戏娱乐', icon: 'fun' },
   { id: 'badminton', title: '羽毛球', icon: 'badminton' },

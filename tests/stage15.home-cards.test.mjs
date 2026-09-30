@@ -156,15 +156,18 @@ test('首页卡片在桌面和窄屏可读，背景、备忘录和记录入口�
     assert.ok(shadowLayers >= 3, `运动健康文字保留多层阴影以压住插画亮部（当前 ${shadowLayers} 层）`)
     assert.match(sportShadow, /rgba?\(/, '阴影带透明度，避免生硬黑边')
 
-    // 游戏娱乐卡片文字统一为插画同色系的靛蓝：标题、正文、底部入口三者一致。
+    // 游戏娱乐卡片：标题与正文用插画同色系的靛蓝；
+    // 底部入口压在插画的深色地毯上，改用白色字，不再加阴影描边。
     const funTextColors = await page.evaluate(() => ({
       title: getComputedStyle(document.querySelector('.home-note-fun .home-poster-title')).color,
       body: getComputedStyle(document.querySelector('.home-note-fun .home-note-empty, .home-note-fun .home-note-body .home-line')).color,
       action: getComputedStyle(document.querySelector('.home-note-fun .button-link')).color,
+      actionShadow: getComputedStyle(document.querySelector('.home-note-fun .button-link')).textShadow,
     }))
-    for (const [part, color] of Object.entries(funTextColors)) {
-      assert.equal(color, 'rgb(44, 53, 87)', `游戏娱乐${part} 使用统一的靛蓝文字`)
-    }
+    assert.equal(funTextColors.title, 'rgb(44, 53, 87)', '游戏娱乐标题使用统一的靛蓝文字')
+    assert.equal(funTextColors.body, 'rgb(44, 53, 87)', '游戏娱乐正文使用统一的靛蓝文字')
+    assert.equal(funTextColors.action, 'rgb(255, 255, 255)', '游戏娱乐底部入口使用白色文字')
+    assert.equal(funTextColors.actionShadow, 'none', '游戏娱乐底部入口不加阴影')
 
     const desktopGeometry = await page.evaluate(() => {
       const rect = selector => {

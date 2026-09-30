@@ -101,6 +101,31 @@ export function daySubtitle(value: string) {
   return `${date.getFullYear()}年 · ${weekdayNames[date.getDay()]}`
 }
 
+/**
+ * 周视图每一列最多能放下的条目数（含「还有 N 条」提示行）。
+ *
+ * 周视图是固定高度的一格一格，内容多一点就会顶破日历框，所以条目要像月视图
+ * 那样截断。这里把「提示行」也算进配额：需要提示时少显示一条，保证提示本身
+ * 也在框内（否则提示会被 overflow 裁掉，用户看不到还有多少条）。
+ */
+export const weekColumnLimit = 4
+
+export function weekColumnSlice<T>(rows: T[]) {
+  const shown = rows.length > weekColumnLimit ? weekColumnLimit - 1 : rows.length
+  return { visible: rows.slice(0, shown), hidden: rows.length - shown }
+}
+
+/**
+ * 月视图／周视图里点某一天：选中该日期并切到日视图，和「今日计划」一致。
+ * 只有从这两张总览视图点进去才跳转；日视图内切换日期时保持不动。
+ */
+export function useLifeDateSelection(setDate: (date: string) => void, setMode: (mode: LifeViewMode) => void, mode: LifeViewMode) {
+  return (next: string) => {
+    setDate(next)
+    if (mode !== 'day') setMode('day')
+  }
+}
+
 const settingNumber = (value: string | number | boolean | undefined, fallback: number) =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback
 

@@ -12,6 +12,8 @@ import {
   rangeFor,
   shortWeekdayNames,
   todayKey,
+  useLifeDateSelection,
+  weekColumnSlice,
   weekdayNames,
   type LifeViewMode,
 } from '../components/LifeCalendarShell'
@@ -39,6 +41,8 @@ export function FunPage() {
   const week = mondayOf(date)
   const weekly = useMemo(() => rows.filter(row => mondayOf(row.date) === week), [rows, week])
   const range = rangeFor(date, mode)
+  // 月／周视图点某天：选中并跳到日视图（与「今日计划」一致）。
+  const selectDate = useLifeDateSelection(setDate, setMode, mode)
   const planned = (list: Entertainment[]) => list.reduce((sum, row) => sum + row.plannedMinutes, 0)
   const actual = (list: Entertainment[]) => list.reduce((sum, row) => sum + (row.actualMinutes ?? 0), 0)
 
@@ -80,7 +84,7 @@ export function FunPage() {
         const dayDate = parseDate(day)
         const dayRows = rows.filter(row => row.date === day).sort((a, b) => a.plannedTime.localeCompare(b.plannedTime))
         return <div key={day} className={`tasks-month-cell calendar-day ${day.startsWith(month) ? '' : 'outside'} ${day === date ? 'selected' : ''} ${day === todayKey() ? 'today' : ''}`} aria-label={day}>
-          <button className="tasks-cell-date" type="button" aria-label={day} onClick={() => setDate(day)}><strong>{dayDate.getDate()}</strong><small>{day === todayKey() ? '今天' : ''}</small></button>
+          <button className="tasks-cell-date" type="button" aria-label={day} onClick={() => selectDate(day)}><strong>{dayDate.getDate()}</strong><small>{day === todayKey() ? '今天' : ''}</small></button>
           <div className="tasks-cell-items">{dayRows.slice(0, 3).map(row => <span key={row.id}>{renderChip(row, true)}</span>)}{dayRows.length > 3 && <small className="tasks-more">还有 {dayRows.length - 3} 条</small>}</div>
         </div>
       })}</div>
@@ -93,9 +97,10 @@ export function FunPage() {
       {datesFrom(range.start, 7).map(day => {
         const dayDate = parseDate(day)
         const dayRows = rows.filter(row => row.date === day).sort((a, b) => a.plannedTime.localeCompare(b.plannedTime))
+        const { visible, hidden } = weekColumnSlice(dayRows)
         return <div key={day} className={`tasks-week-column ${day === date ? 'selected' : ''} ${day === todayKey() ? 'today' : ''}`}>
-          <button type="button" className="tasks-week-heading" onClick={() => setDate(day)}><span>{weekdayNames[dayDate.getDay()]}</span><strong>{dayDate.getDate()}</strong></button>
-          <div className="tasks-week-items">{dayRows.map(row => <span key={row.id}>{renderChip(row)}</span>)}</div>
+          <button type="button" className="tasks-week-heading" onClick={() => selectDate(day)}><span>{weekdayNames[dayDate.getDay()]}</span><strong>{dayDate.getDate()}</strong></button>
+          <div className="tasks-week-items">{visible.map(row => <span key={row.id}>{renderChip(row)}</span>)}{hidden > 0 && <small className="tasks-more">还有 {hidden} 条</small>}</div>
         </div>
       })}
     </div><p className="life-summary-line">{fullDateLabel(date)} 的娱乐安排</p>

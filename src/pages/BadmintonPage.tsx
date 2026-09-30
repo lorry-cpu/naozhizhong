@@ -11,6 +11,8 @@ import {
   rangeFor,
   shortWeekdayNames,
   todayKey,
+  useLifeDateSelection,
+  weekColumnSlice,
   weekdayNames,
   type LifeViewMode,
 } from '../components/LifeCalendarShell'
@@ -37,6 +39,8 @@ export function BadmintonPage() {
   const sorted = useMemo(() => [...rows].sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start)), [rows])
   const daily = sorted.filter(row => row.date === date)
   const range = rangeFor(date, mode)
+  // 月／周视图点某天：选中并跳到日视图（与「今日计划」一致）。
+  const selectDate = useLifeDateSelection(setDate, setMode, mode)
   const periodRows = mode === 'month'
     ? rows.filter(row => row.date.startsWith(date.slice(0, 7)))
     : rows.filter(row => row.date >= rangeFor(date, 'week').start && row.date <= rangeFor(date, 'week').end)
@@ -81,7 +85,7 @@ export function BadmintonPage() {
         const dayDate = parseDate(day)
         const dayRows = rows.filter(row => row.date === day).sort((a, b) => a.start.localeCompare(b.start))
         return <div key={day} className={`tasks-month-cell calendar-day ${day.startsWith(month) ? '' : 'outside'} ${day === date ? 'selected' : ''} ${day === todayKey() ? 'today' : ''}`} aria-label={day}>
-          <button className="tasks-cell-date" type="button" aria-label={day} onClick={() => setDate(day)}><strong>{dayDate.getDate()}</strong><small>{day === todayKey() ? '今天' : ''}</small></button>
+          <button className="tasks-cell-date" type="button" aria-label={day} onClick={() => selectDate(day)}><strong>{dayDate.getDate()}</strong><small>{day === todayKey() ? '今天' : ''}</small></button>
           <div className="tasks-cell-items">{dayRows.slice(0, 3).map(row => <span key={row.id}>{renderChip(row, true)}</span>)}{dayRows.length > 3 && <small className="tasks-more">还有 {dayRows.length - 3} 场</small>}</div>
         </div>
       })}</div>
@@ -95,9 +99,10 @@ export function BadmintonPage() {
       {datesFrom(range.start, 7).map(day => {
         const dayDate = parseDate(day)
         const dayRows = rows.filter(row => row.date === day).sort((a, b) => a.start.localeCompare(b.start))
+        const { visible, hidden } = weekColumnSlice(dayRows)
         return <div key={day} className={`tasks-week-column ${day === date ? 'selected' : ''} ${day === todayKey() ? 'today' : ''}`}>
-          <button type="button" className="tasks-week-heading" onClick={() => setDate(day)}><span>{weekdayNames[dayDate.getDay()]}</span><strong>{dayDate.getDate()}</strong></button>
-          <div className="tasks-week-items">{dayRows.map(row => <span key={row.id}>{renderChip(row)}</span>)}</div>
+          <button type="button" className="tasks-week-heading" onClick={() => selectDate(day)}><span>{weekdayNames[dayDate.getDay()]}</span><strong>{dayDate.getDate()}</strong></button>
+          <div className="tasks-week-items">{visible.map(row => <span key={row.id}>{renderChip(row)}</span>)}{hidden > 0 && <small className="tasks-more">还有 {hidden} 场</small>}</div>
         </div>
       })}
     </div><p className="life-summary-line">{fullDateLabel(date)} 的打球记录</p>

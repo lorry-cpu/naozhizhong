@@ -34,11 +34,16 @@ test('今日计划、饮食、娱乐和羽毛球都用月历选择日期', async
       assert.ok(current)
       const nextDate = current.startsWith('2026-09-25') ? '2026-09-26' : '2026-09-25'
       await page.getByRole('button', { name: nextDate, exact: true }).click()
+      // 月／周视图点某一天都会切到日视图，所以四个页面都应该落到日视图，
+      // 并且选中的就是刚点的那一天。
+      await page.getByLabel('日视图').waitFor()
+      assert.equal(
+        await page.locator('.tasks-view-switch button.active').innerText(),
+        '日',
+        `${title} 点日期后切到日视图`,
+      )
       if (title === '今日计划') {
-        await page.getByLabel('日视图').waitFor()
         assert.equal(await page.getByLabel('查看日期').inputValue(), nextDate)
-      } else {
-        await page.waitForFunction(expected => document.querySelector('.calendar-day.selected')?.getAttribute('aria-label') === expected, nextDate)
       }
       assert.match(await page.locator('#main-content').innerText(), new RegExp(headingPart))
     }

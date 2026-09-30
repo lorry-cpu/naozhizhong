@@ -7,6 +7,7 @@ import { settleTask } from '../domain/settlement'
 import { exportBackup } from '../db/backup'
 import { taskCsv, taskIcs, taskJson, type TaskExport } from '../domain/taskExport'
 import { normalizeTextSize, normalizeTextTone, textToneOptions, type TextTone } from '../domain/calendarSettings'
+import { weekColumnSlice } from '../components/LifeCalendarShell'
 
 type ViewMode = 'day' | 'week' | 'month'
 type Form = {
@@ -336,9 +337,11 @@ export function TasksPage() {
   function renderWeekView() {
     return <div className="tasks-week-view" aria-label="周视图"><div className="tasks-week-grid">{datesFrom(range.start, 7).map(day => {
       const dayDate = parseDate(day)
+      const dayItems = taskItemsFor(day)
+      const { visible, hidden } = weekColumnSlice(dayItems)
       return <div key={day} className={`tasks-week-column ${day === date ? 'selected' : ''} ${day === today() ? 'today' : ''}`}>
         <button type="button" className="tasks-week-heading" onClick={() => selectDate(day)}><span>{weekdayNames[dayDate.getDay()]}</span><strong>{dayDate.getDate()}</strong></button>
-        <div className="tasks-week-items">{taskItemsFor(day).map(item => <span key={item.id}>{renderTaskChip(item)}</span>)}</div>
+        <div className="tasks-week-items">{visible.map(item => <span key={item.id}>{renderTaskChip(item)}</span>)}{hidden > 0 && <small className="tasks-more">还有 {hidden} 项…</small>}</div>
       </div>
     })}</div></div>
   }

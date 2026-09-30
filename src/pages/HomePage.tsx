@@ -8,6 +8,15 @@ import { AppIcon } from '../components/AppIcon'
 
 const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 const two = (value: number) => String(value).padStart(2, '0')
+// 首页摘要卡片是固定尺寸：每张卡最多列这么多条，超出的用「还有 N 条」收尾。
+// 需要显示省略提示时会少列一条，给提示行腾位置，这样「标题 / 正文 / 底部入口」
+// 三个位置都不动，卡片也不会被撑长。
+const cardLineLimit = 3
+const cardLineLimitWithMore = 2
+function cardSlice<T>(rows: T[]) {
+  const limit = rows.length > cardLineLimit ? cardLineLimitWithMore : cardLineLimit
+  return { visible: rows.slice(0, limit), hidden: rows.length - limit }
+}
 
 export function HomePage({ memo, onMemo, onSave, navigate, planArt, onPickPlanArt }: {
   memo: string; onMemo: (text: string) => void; onSave: () => void
@@ -46,6 +55,8 @@ export function HomePage({ memo, onMemo, onSave, navigate, planArt, onPickPlanAr
   const latest = [...games].sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start))[0]
   const allDone = total > 0 && done === total
   const listedTasks = [...todaysTasks].sort((a, b) => a.time.localeCompare(b.time))
+  const mealSlice = cardSlice(todaysMeals)
+  const funSlice = cardSlice(todaysFun)
   return <div className="home">
     <div className="home-head">
       <div>
@@ -103,11 +114,11 @@ export function HomePage({ memo, onMemo, onSave, navigate, planArt, onPickPlanAr
           <section className="home-sheet home-note home-note-food">
             <div className="home-food-copy">
               <h2 className="home-poster-title">今日饮食</h2>
-              <div className="home-note-body">
+              <div className="home-note-body home-note-scroll">
                 {todaysMeals.length
-                  ? todaysMeals.map(row => <p className="home-line" key={row.id}><strong>{row.time}</strong> {row.kind}：{row.food}</p>)
+                  ? <>{mealSlice.visible.map(row => <p className="home-line" key={row.id}><strong>{row.time}</strong> {row.kind}：{row.food}</p>)}{mealSlice.hidden > 0 && <p className="home-line home-more-line">还有 {mealSlice.hidden} 餐…</p>}</>
                   : <p className="home-note-empty">今天还没记饮食，<span className="home-inline-action">去安排一餐 →</span></p>}
-                <p className="home-line muted-small">已记录花费 ¥{mealSpent.toFixed(2)}</p>
+                <p className="home-line home-total-line muted-small">已记录花费 ¥{mealSpent.toFixed(2)}</p>
               </div>
               <button className="button-link" onClick={() => navigate('food')}>饮食计划 →</button>
             </div>
@@ -116,11 +127,11 @@ export function HomePage({ memo, onMemo, onSave, navigate, planArt, onPickPlanAr
           <section className="home-sheet home-note home-note-fun">
             <div className="home-fun-copy">
               <h2 className="home-poster-title">游戏娱乐</h2>
-              <div className="home-note-body">
+              <div className="home-note-body home-note-scroll">
                 {todaysFun.length
-                  ? todaysFun.map(row => <p className="home-line" key={row.id}><strong>{row.plannedTime}</strong> {row.title}</p>)
+                  ? <>{funSlice.visible.map(row => <p className="home-line" key={row.id}><strong>{row.plannedTime}</strong> {row.title}</p>)}{funSlice.hidden > 0 && <p className="home-line home-more-line">还有 {funSlice.hidden} 条…</p>}</>
                   : <p className="home-note-empty">今天还没安排娱乐，留一点放松时间 →</p>}
-                <p className="home-line muted-small">实际已记录 {funActual} 分钟</p>
+                <p className="home-line home-total-line muted-small">实际已记录 {funActual} 分钟</p>
               </div>
               <button className="button-link" onClick={() => navigate('fun')}>娱乐记录 →</button>
             </div>
