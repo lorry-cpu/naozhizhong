@@ -1,2 +1,2 @@
-# Windows command scripts must remain executable after GitHub ZIP download.
+# Use CRLF in checkouts; the launcher must also support LF in ZIP archives.
 *.cmd text eol=crlf
