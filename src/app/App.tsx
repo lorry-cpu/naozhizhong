@@ -11,7 +11,7 @@ import { SettingsPage } from '../pages/SettingsPage'
 import { MemoPage } from '../pages/MemoPage'
 import { WallpaperDialog } from '../components/WallpaperDialog'
 import { PlanArtDialog, defaultPlanArt, normalizePlanArt } from '../components/PlanArtDialog'
-import { ensureFont, hasFont, useCachedFont } from '../db/fonts'
+import { ensureFont } from '../db/fonts'
 import { AppIcon } from '../components/AppIcon'
 
 export const pages = [
@@ -111,16 +111,12 @@ export function App() {
     return watchChanges(loadPlanArt)
   }, [])
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
-  // 字体文件不进构建产物，改为运行时按需下载：
-  // 启动时只用本机已缓存的字体，不主动联网（避免首次打开就下载几十 MB）。
-  // 真正需要联网的时机是「用户选中一个还没缓存的字体」。
+  // 首次打开也从随项目附带的本地字体包加载，无需外网。
   useEffect(() => {
     let active = true
-    void hasFont(font)
-      .then(cached => {
-        if (active && cached) return useCachedFont(font)
-      })
-      .catch(() => { /* 缓存不可用时就退回系统兜底字体 */ })
+    void ensureFont(font).catch(() => {
+      if (active) setMessage('本地字体加载失败，当前使用系统字体。请检查项目中的字体包是否完整。')
+    })
     return () => { active = false }
   }, [font])
   useEffect(() => { document.documentElement.dataset.font = font }, [font])
@@ -175,13 +171,13 @@ export function App() {
     try {
       await saveSetting('font', next)
       setFont(next)
-      // 字体文件按需下载：本机已有缓存时瞬时完成，否则联网拉取。
+      // 缓存为空时读取项目自带的本地字体包。
       await ensureFont(next, ratio => {
-        if (ratio < 1) setMessage(`字体已保存，正在下载字体文件…${Math.round(ratio * 100)}%`)
+        if (ratio < 1) setMessage(`字体已保存，正在加载本地字体…${Math.round(ratio * 100)}%`)
       })
       setMessage('字体已保存')
     } catch (error) {
-      setMessage(`字体已保存，但字体文件下载失败：${String(error)}。当前显示系统兜底字体。`)
+      setMessage(`字体已保存，但本地字体加载失败：${String(error)}。当前显示系统字体。`)
     }
   }
   async function importWallpaper(file: File) {

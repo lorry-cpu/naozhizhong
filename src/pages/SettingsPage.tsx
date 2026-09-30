@@ -79,7 +79,7 @@ export function SettingsPage({ health, theme, onTheme, font, onFont }: {
       <select id="font-choice" value={font} onChange={e => onFont(e.target.value as FontId)}>
         {FONTS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select>
-      <p className="muted-small">风格与字体都可自由切换。字体文件按需下载并缓存在本机，缓存不包含在备份文件里。</p>
+      <p className="muted-small">风格与字体都可自由切换。两款字体已随应用提供，无需联网。字体缓存不包含在备份文件里。</p>
     </section>
     <section className="panel"><h2>本机数据</h2><p data-testid="storage-status">{health}</p>
       <p className="muted-small" data-testid="font-cache">
@@ -91,7 +91,7 @@ export function SettingsPage({ health, theme, onTheme, font, onFont }: {
           try {
             await clearFontCache()
             setFontBytes(0)
-            setMessage('字体缓存已清除；再次使用时会重新下载。')
+            setMessage('字体缓存已清除；再次使用时会从本地字体包加载。')
           } catch (error) { setMessage(`清除字体缓存失败：${String(error)}`) }
         })()}>清除字体缓存</button>
     </section>

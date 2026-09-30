@@ -1,0 +1,20 @@
+Bundled fonts for Naozhizhong
+
+source-han-sans.woff2
+Embedded family: Noto Sans SC
+Version: 2.04;241114210130;non-release
+Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+
+source-han-serif.woff2
+Embedded family: Noto Serif SC
+Version: 2.02;241114204558;non-release
+Copyright 2017-2023 Adobe (http://www.adobe.com/).
+
+These notices are transcribed from the bundled fonts' name tables.
+The application retains its existing Chinese display labels and asset IDs.
+Font family names inside the font files have not been changed.
+The original TTF files were repackaged as WOFF2 using fontTools and Brotli.
+
+Both fonts are licensed under the SIL Open Font License, Version 1.1.
+See OFL.txt in this directory. The project's MIT license does not apply
+to these font files.

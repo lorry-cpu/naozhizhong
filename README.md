@@ -2,71 +2,39 @@
 
 只供一人使用的本机浏览器应用。包含首页总览、备忘录、今日计划、饮食计划、游戏娱乐、羽毛球、数据与设置七个页面。无需登录；日常使用无需联网或云数据库。
 
-采用 [MIT 许可证](LICENSE)。界面所用第三方中文字体**不包含在本仓库中**，其版权归各字体厂商所有，MIT 不适用于这些字体文件。
+应用代码采用 [MIT 许可证](LICENSE)。内置字体另遵循 SIL Open Font License 1.1，许可和版权声明随项目提供。
 
 ## 启动
 
 1. 电脑需要安装 Node.js，使用同一个浏览器配置（建议 Chrome）访问本应用。
-2. 首次获取源代码后，在本目录运行 `npm.cmd install` 和 `npm.cmd run build`；这是准备本机运行文件，首次安装开发依赖可能需要网络。
+2. 从 GitHub 下载 ZIP 并完整解压；仓库已包含构建文件和字体包，日常启动无需安装 npm 依赖。只有修改源码或缺少 `dist/index.html` 时，才在项目根目录执行 `npm.cmd install` 和 `npm.cmd run build`。
 3. 双击 [`launcher/启动应用.cmd`](launcher/启动应用.cmd)。脚本会启动本机静态文件服务并打开浏览器。如果浏览器没有自动打开，请手动访问 **http://127.0.0.1:8765/**。
 4. 运行期间保持启动窗口开启；关闭窗口或按 Ctrl+C 会停止本机服务。下次双击同一脚本即可继续使用。如果闹之钟已经在运行，脚本会直接打开页面；端口 8765 被其他程序占用时脚本会提示，请关闭占用端口的进程后重试。
 
-服务仅绑定 `127.0.0.1`，不接收应用数据。构建产物在 `dist/`，应用运行时没有 CDN、账号或外网请求（**字体下载除外**，见下文）。更新源代码后再次运行 `npm.cmd run build` 才会更新浏览器中的页面。
+服务仅绑定 `127.0.0.1`，不接收应用数据。构建产物在 `dist/`，应用运行时没有 CDN、账号或外网请求，字体也从本机读取。更新源代码后再次运行 `npm.cmd run build` 才会更新浏览器中的页面。
 
 ## 字体
 
-界面提供两种**开源**中文字体（思源宋体 / 思源黑体，SIL OFL 1.1），可在「数据与设置」→「界面外观」中自由切换。
+项目已附带两款开源中文字体，可在「数据与设置」中自由切换。
 
-字体文件（合计约 41MB，下载的是约 18MB 的 woff2 压缩包）**不打进仓库和安装包**：
+- `public/fonts/fonts.tar.gz` 内含两款 WOFF2 字体，约 18 MB，随 GitHub 的 Download ZIP 一起下载。
+- 首次打开会自动从本机读取、解压并缓存字体；切换字体无需访问外网。
+- 启动器直接提供项目内的字体包；执行构建后，`dist/fonts/` 也包含相同资源，可独立部署构建目录。
+- 字体缓存不包含在数据备份中。清空缓存或更换浏览器后，会重新读取本地字体包，不再下载。
+- 版权信息和完整许可随包提供，见 [NOTICE.txt](public/fonts/NOTICE.txt) 和 [OFL.txt](public/fonts/OFL.txt)。
 
-- **启动时由本机启动器自动下载**字体包到 `dist/fonts/`（首次约 18MB，之后不再下载），
-  浏览器再从**同源**地址 `/fonts/fonts.tar.gz` 取用并缓存到本机 IndexedDB。
-- 下载完成后在「数据与设置」→「界面外观」切换字体，两款字体已一并缓存，切换是瞬时的。
-- 字体缓存**不包含在备份文件里**（体积太大），恢复备份后无需重新下载（包仍在 `dist/fonts/`）。
-- **字体下载失败不影响使用**：页面会回退到系统自带的中文字体，功能完全正常。
-  启动窗口会打印失败原因；重开一次即可重试。
+浏览器需要支持 `DecompressionStream`。请使用较新的 Chrome、Edge、Firefox 或 Safari；不支持解压或字体包损坏时会提示并暂用系统字体。
 
-> 为什么要绕这么一圈：github.com 的下载地址**不返回 CORS 头**，
-> 浏览器直接 `fetch` 会被拦截（`blocked by CORS policy: No 'Access-Control-Allow-Origin'`）。
-> 因此改由 Node（`launcher/fonts.cjs`）下载，浏览器只访问本机地址。
-> 这样也顺带让不同浏览器共用同一份本机缓存。
+### 维护者：更新内置字体
 
-> 早期版本内置过 15 款字体，但其中多款是**商业字体**（汉仪、潮字社、上首等），
-> 授权不允许公开分发，因此已全部移除，只保留可自由分发的开源字体。
+普通用户无需执行打包脚本。维护者替换字体时：
 
-字体包需要浏览器支持 `DecompressionStream`（Chrome / Edge 80+、Firefox 113+、Safari 16.4+）；
-过旧的浏览器会提示无法解压并回退到系统字体，其余功能不受影响。
+1. 将两款有分发许可的源字体放入 `public/fonts/source-han-serif.ttf` 和 `public/fonts/source-han-sans.ttf`（源文件被 Git 忽略）。
+2. 安装带 `fontTools` 与 `brotli` 的 Python；可通过 `PYTHON` 环境变量指定解释器。
+3. 执行 `npm.cmd run fonts:pack`，生成并更新受版本控制的 `public/fonts/fonts.tar.gz`，同步检查许可文件。
+4. 执行 `npm.cmd run fonts:check`、`npm.cmd run build` 和 `npm.cmd test` 后，将字体包、许可和构建结果一起提交。
 
-### 维护者：发布字体文件
-
-字体文件通过 GitHub Releases 分发。发布新版本时：
-
-```bash
-node scripts/pack-fonts.mjs --check   # 检查 public/fonts 下的 .ttf 是否齐全
-node scripts/pack-fonts.mjs           # 生成 release/fonts.tar.gz
-```
-
-1. 把 `.ttf` 放回 `public/fonts/`（该目录已被 `.gitignore` 忽略，不会进仓库）；
-2. 在 GitHub 建一个 **tag 为 `fonts-v1`** 的 Release；
-3. 把 `release/fonts.tar.gz` **作为单个附件上传**，文件名保持 `fonts.tar.gz`；
-4. 修改 [`src/domain/fonts.ts`](src/domain/fonts.ts) 里的 `FONT_BASE_URL` 为你自己的仓库地址。
-
-打包脚本需要 `fontTools` 与 `brotli`（`pip install fonttools brotli`），用于把 `.ttf` 转成 `.woff2`。
-
-发布新版本时还要同步更新 `launcher/fonts.cjs` 里的 `FONT_URL`（指向新 tag），否则启动器仍会去下旧包。
-
-> **为什么是 `.tar.gz` 而不是逐个上传**：GitHub Releases 不接受 `.ttf` 后缀的附件。
-> 打包成一个压缩包后只需上传 1 个附件。浏览器端用原生 `DecompressionStream`
-> 解压，见 [`src/domain/archive.ts`](src/domain/archive.ts)。
-> **不要改成 zip**：浏览器没有内置 zip 解压 API，会被迫引入第三方依赖。
-
-> **为什么包内是 `.woff2` 而不是 `.ttf`**：ttf 直接 gzip 后约 25.6MiB，
-> 超过 GitHub Release 单文件 25MB 的上限，上传会被拒绝。
-> woff2 是同一套字形的**无损重打包**（Brotli + 表变换）：不删字形、不删字重、
-> 观感完全一致，体积降到约 17.9MiB。
-> `node scripts/pack-fonts.mjs` 会在超过上限时直接报错，测试里也有对应的体积断言。
-
-> 构建时 Vite 默认会把 `public/` 整个复制进 `dist/`，所以 [`vite.config.ts`](vite.config.ts) 里加了一个插件，在构建结束后删除 `dist/fonts`，确保安装包和构建产物都不含字体。
+构建会保留压缩包与许可，排除开发机上的未压缩字体；包内采用 WOFF2 以减少下载 ZIP 的体积。
 
 ## 日常使用
 
@@ -96,6 +64,6 @@ node scripts/pack-fonts.mjs           # 生成 release/fonts.tar.gz
 
 ## 开发验证
 
-在项目目录执行 `npm.cmd run build` 和 `npm.cmd test`。测试包括规则单元测试、实际 Chrome 浏览器中的跨零点、计时重开、离线导航、事务回滚、三类生活记录、按日期备忘、月历选日、品牌与壁纸、字体按需下载与缓存，以及完整备份恢复。测试使用临时浏览器配置，不会读取日常浏览器里的个人记录。
+在项目目录执行 `npm.cmd run build` 和 `npm.cmd test`。测试包括规则单元测试、实际 Chrome 浏览器中的跨零点、计时重开、离线导航、事务回滚、三类生活记录、按日期备忘、月历选日、品牌与壁纸、内置字体离线加载与缓存，以及完整备份恢复。测试使用临时浏览器配置，不会读取日常浏览器里的个人记录。
 
 另外两个文件不含正式运行代码：[`navigation-preview.html`](navigation-preview.html) 是顶部导航的静态预览页，[`DEVELOPMENT_LOG.md`](DEVELOPMENT_LOG.md) 记录各阶段的实现与验证。

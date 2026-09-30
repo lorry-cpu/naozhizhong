@@ -1,24 +1,5 @@
-// 把 public/fonts 下的字体打成 GitHub Releases 用的压缩包。
-//
-// 用法：
-//   node scripts/pack-fonts.mjs           生成 release/fonts.tar.gz
-//   node scripts/pack-fonts.mjs --check   只校验清单是否齐全，不生成文件
-//
-// 为什么字体不放在仓库里：
-//   两个 ttf 合计约 41MB。一旦提交进 Git 历史就无法轻易移除，
-//   别人 clone 时要下载全部体积，因此改为运行时按需下载。
-//
-// 为什么打成单个 .tar.gz 而不是逐个上传：
-//   GitHub Releases 不接受 .ttf 后缀的附件。改成单个压缩包后
-//   只需要上传 1 个附件。浏览器端用原生 DecompressionStream('gzip')
-//   解压，见 src/domain/archive.ts。**不要改用 zip**：浏览器没有内置
-//   zip 解压 API，会被迫引入第三方依赖。
-//
-// 为什么包内是 .woff2 而不是 .ttf：
-//   ttf 直接 gzip 后约 25.6MiB，超过 GitHub Release 单文件 25MB 的上限。
-//   woff2 是同一套字形的无损重打包（Brotli + 表变换），不删字形、
-//   不删字重、观感完全一致，体积降到约 18MiB。
-//   转换需要 Python 的 fontTools + brotli，见 convertFontsToWoff2()。
+// Maintainer tool: rebuild the bundled WOFF2 archive from local TTF sources.
+// --check validates the distributed package without Python or source fonts.
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdir, readdir, readFile, stat, rm, writeFile } from 'node:fs/promises'
@@ -54,11 +35,7 @@ function findPython() {
   return null
 }
 
-/**
- * 把 ttf 转成 woff2。失败时直接抛错而不是悄悄跳过：
- * 一旦退回 ttf，包会超过 GitHub 的 25MB 上限，发布照样会失败，
- * 提前报错比上传到一半才发现要好。
- */
+/** Convert only the two configured source fonts. */
 async function convertFontsToWoff2(ids) {
   const python = findPython()
   if (!python) {
@@ -94,12 +71,25 @@ for src, dst in zip(sys.argv[1::2], sys.argv[2::2]):
 }
 
 async function main() {
+  if (checkOnly) {
+    const bundled = path.join(fontsDir, archiveName)
+    const bytes = (await stat(bundled)).size
+    if (bytes <= 0 || bytes >= 25 * 1000 * 1000) throw new Error('内置字体包为空或超过项目的 25 MB 体积预算')
+    const entries = execFileSync('tar', ['-tzf', bundled], { encoding: 'utf8' }).trim().split(/\r?\n/).sort()
+    const wanted = expected.map(id => id + '.woff2').sort()
+    if (JSON.stringify(entries) !== JSON.stringify(wanted)) throw new Error('内置包必须只包含两款预期的 WOFF2 字体')
+    for (const name of ['OFL.txt', 'NOTICE.txt']) {
+      if (!(await stat(path.join(fontsDir, name))).size) throw new Error('缺少字体许可：' + name)
+    }
+    console.log('内置字体包校验通过：' + (bytes / 1048576).toFixed(1) + ' MiB，包含两款字体及许可文件。')
+    return
+  }
   let names
   try {
     names = (await readdir(fontsDir)).filter(name => name.endsWith('.ttf'))
   } catch {
     console.error(`未找到字体目录：${fontsDir}`)
-    console.error('字体已从仓库移除。请先把 .ttf 放回 public/fonts/ 再打包。')
+    console.error('更新内置字体时，请先把两款源 .ttf 放回 public/fonts/。')
     process.exitCode = 1
     return
   }
@@ -114,17 +104,12 @@ async function main() {
   for (const name of names) total += (await stat(path.join(fontsDir, name))).size
   console.log(`ttf 合计 ${(total / 1024 / 1024).toFixed(1)} MiB`)
 
-  if (extra.length) console.warn(`清单外的文件（也会一起打包）：${extra.join(', ')}`)
+  if (extra.length) console.warn(`清单外的源文件（不会打包）：${extra.join(', ')}`)
   if (missing.length) {
     console.error(`缺少：${missing.join(', ')}`)
     process.exitCode = 1
     return
   }
-  if (checkOnly) {
-    console.log('校验通过（--check 模式，未生成文件）')
-    return
-  }
-
   await rm(outDir, { recursive: true, force: true })
   await mkdir(outDir, { recursive: true })
 
@@ -153,22 +138,14 @@ async function main() {
 
   const size = (await stat(target)).size
   const hash = createHash('sha256').update(gzBytes).digest('hex')
-  const limit = 25 * 1000 * 1000  // GitHub 对 Release 单文件的上限（按十进制 MB 计）
-  console.log('')
-  console.log(`已生成 ${target}`)
-  console.log(`  未压缩 tar：${(tarBytes.length / 1024 / 1024).toFixed(1)} MiB`)
-  console.log(`  压缩后：${(size / 1024 / 1024).toFixed(2)} MiB`)
-  console.log(`  sha256：${hash}`)
-  if (size >= limit) {
-    console.error('')
-    console.error(`⚠ 仍超过 GitHub 的 25MB 上限（${size} bytes ≥ ${limit}），上传会被拒绝。`)
-    process.exitCode = 1
-    return
-  }
-  console.log(`  距离 25MB 上限还有 ${((limit - size) / 1024 / 1024).toFixed(2)} MiB 余量`)
-  console.log('')
-  console.log(`下一步：把 ${archiveName} 作为 Release 附件上传（tag 需为 fonts-v1）。`)
-  console.log('附件文件名必须保持 fonts.tar.gz，运行时按 <FONT_BASE_URL>/fonts.tar.gz 下载。')
+  const limit = 25 * 1000 * 1000 // Project size budget, not a GitHub limit.
+  if (size >= limit) throw new Error('字体包超过项目的 25 MB 体积预算：' + size)
+  const bundledTarget = path.join(fontsDir, archiveName)
+  await writeFile(bundledTarget, gzBytes)
+  console.log('已更新内置字体包：' + bundledTarget)
+  console.log('体积：' + (size / 1048576).toFixed(2) + ' MiB')
+  console.log('sha256：' + hash)
+  console.log('请核对 OFL.txt 和 NOTICE.txt，重新构建并测试，然后提交字体包、许可和构建结果。')
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1 })

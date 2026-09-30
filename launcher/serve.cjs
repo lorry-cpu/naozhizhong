@@ -2,7 +2,6 @@ const http = require('node:http')
 const fs = require('node:fs')
 const path = require('node:path')
 const { openBrowser } = require('./open-browser.cjs')
-const { ensureFontArchive } = require('./fonts.cjs')
 
 const host = '127.0.0.1'
 const port = 8765
@@ -10,13 +9,8 @@ const publicDir = path.resolve(__dirname, '..', 'dist')
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json',
   '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.ttf': 'font/ttf',
-  '.gz': 'application/gzip' }
-
-// 字体包由本机服务提供：github.com 不返回 CORS 头，浏览器无法直接跨域 fetch。
-// 必须在 http.createServer 之前定义，下面的请求处理会用到。
-const FONT_DIR = path.join(publicDir, 'fonts')
-const FONT_ARCHIVE = path.join(FONT_DIR, 'fonts.tar.gz')
-const FONT_URL = 'https://github.com/lorry-cpu/naozhizhong/releases/download/fonts-v1/fonts.tar.gz'
+  '.gz': 'application/gzip', '.txt': 'text/plain; charset=utf-8' }
+const bundledFontPaths = new Set(['/fonts/fonts.tar.gz', '/fonts/OFL.txt', '/fonts/NOTICE.txt'])
 
 if (!fs.existsSync(path.join(publicDir, 'index.html'))) {
   console.error('未找到构建文件。请先执行 npm.cmd install 和 npm.cmd run build。')
@@ -36,11 +30,16 @@ const server = http.createServer((req, res) => {
     res.writeHead(403).end()
     return
   }
-  const finalPath = pathname === '/' ? path.join(publicDir, 'index.html') : filePath
+  // A source ZIP carries one font archive in public/; builds copy it to dist/.
+  const finalPath = pathname === '/' ? path.join(publicDir, 'index.html')
+    : bundledFontPaths.has(pathname) && !fs.existsSync(filePath)
+      ? path.join(__dirname, '..', 'public', 'fonts', path.basename(pathname))
+      : filePath
   fs.stat(finalPath, (statError, stat) => {
     if (statError || !stat.isFile()) { res.writeHead(404).end('Not found'); return }
     res.setHeader('X-Naozhizhong-App', '1')
     res.setHeader('Content-Type', mime[path.extname(finalPath)] || 'application/octet-stream')
+    res.setHeader('Content-Length', stat.size)
     res.setHeader('Cache-Control', 'no-cache')
     if (req.method === 'HEAD') { res.writeHead(200).end(); return }
     fs.createReadStream(finalPath).pipe(res)
@@ -76,9 +75,4 @@ server.listen(port, host, () => {
   if (!process.argv.includes('--no-open') && process.platform === 'win32') {
     openBrowser(url)
   }
-  // 字体包在后台下载，不阻塞页面加载：
-  // 浏览器请求 /fonts/fonts.tar.gz 时若还没下完会得到 404，
-  // 应用会回退系统字体并提示；下载完刷新即可用上。
-  fs.mkdirSync(FONT_DIR, { recursive: true })
-  ensureFontArchive(FONT_ARCHIVE, FONT_URL)
 })

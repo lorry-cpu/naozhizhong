@@ -1,10 +1,13 @@
 node_modules/
 .pnpm-store/
 
-# 字体共约 41MB，不进仓库：启动器会从 GitHub Release 下载到 dist/fonts/ 再同源提供给浏览器。
-# 需要打包时把 .ttf 放回 public/fonts/，见 scripts/pack-fonts.mjs。
-public/fonts/
-# 启动器下载的字体包缓存（dist/fonts/ 已被上面的规则覆盖，这里是显式说明）
+# 源字体文件不进仓库；压缩后的开源字体包随项目分发。
+public/fonts/*
+!public/fonts/
+!public/fonts/fonts.tar.gz
+!public/fonts/OFL.txt
+!public/fonts/NOTICE.txt
+# 构建产物中的字体目录由 public/fonts/fonts.tar.gz 生成。
 dist/fonts/
 # 字体打包产物
 release/

@@ -24,8 +24,8 @@ SOFTWARE.
 
 ## 第三方字体说明
 
-本仓库不包含任何字体文件（见 README 的「字体」章节），
-字体在首次使用时从本仓库的 GitHub Releases 按需下载。
+本仓库在 public/fonts/fonts.tar.gz 中附带两款字体，运行时无需联网下载。
+字体版权与完整许可文本见 public/fonts/NOTICE.txt 和 public/fonts/OFL.txt。
 
 界面只使用两种**开源**字体：
 

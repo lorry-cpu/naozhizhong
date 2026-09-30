@@ -14,9 +14,9 @@
   font-synthesis: none;
 }
 /* 只保留两种开源字体（思源宋体 / 思源黑体，SIL OFL 1.1）。
-   字体文件不打进构建产物，改为首次使用时从 GitHub Releases 下载，
+   字体包随项目提供，首次使用时从本机服务读取，
    由 src/db/fonts.ts 在运行时注入 @font-face。
-   下面的 --app-font-family 保留系统字体作为兜底，字体未下载完也能正常阅读。 */
+   下面的 --app-font-family 保留系统字体作为兜底，字体加载期间也能正常阅读。 */
 :root[data-font="source-han-sans"] { --app-font-family: "NaoSourceHanSans", "Noto Sans SC", sans-serif; }
 :root[data-font="source-han-serif"] { --app-font-family: "NaoSourceHanSerif", "Noto Serif SC", serif; }
 :root[data-theme="cool"] { --app-bg: #f0f4f8; --app-panel: #fff; --app-panel-rgb: 255, 255, 255; --app-ink: #1e3044; --app-muted: #64758a; --app-border: #e0e8f1; --app-primary: #326ca8; --app-soft: #e9f2fc; }

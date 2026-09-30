@@ -8,7 +8,7 @@ import path from 'node:path'
 import { extractFontsFromArchive, parseTar, decompress, TarError } from '../src/domain/archive.ts'
 
 /**
- * 字体改为从 GitHub Releases 下载 fonts.tar.gz（GitHub 不接受 .ttf 附件），
+ * 字体以随项目提供的 fonts.tar.gz 分发，
  * 浏览器端必须自己解压。这里验证解压链路，用的是真实的 tar + gzip 产物，
  * 而不是手写的假数据，否则打包脚本和解压实现可能各自"自洽"却互不兼容。
  */
@@ -172,26 +172,9 @@ test('decompress 支持 gzip 与 deflate-raw 两种容器', async () => {
   assert.deepEqual(await decompress(gz, 'gzip'), text)
 })
 
-/**
- * 回归：GitHub Release 单文件上限 25MB。
- * 曾经用 ttf 直接打包，产物 26,798,264 字节，上传时被拒绝。
- * 这个测试守住上限，避免以后换字体或改格式时又踩同一个坑。
- */
-test('字体包必须小于 GitHub Release 的 25MB 上限', async () => {
-  const archivePath = path.join(process.cwd(), 'release', 'fonts.tar.gz')
-  try {
-    await access(archivePath)
-  } catch {
-    // 发布包是本地生成的（release/ 不进仓库），没有就跳过。
-    console.log('跳过体积断言：尚未生成 release/fonts.tar.gz（先运行 npm run fonts:pack）')
-    return
-  }
-  const { size } = await stat(archivePath)
-  const limit = 25 * 1000 * 1000
-  assert.ok(
-    size < limit,
-    `字体包 ${size} 字节超过 GitHub 的 ${limit} 字节上限（超出 ${size - limit} 字节），上传会被拒绝`,
-  )
+test('随仓库分发的字体包存在且符合项目体积预算', async () => {
+  const { size } = await stat(path.join(process.cwd(), 'public', 'fonts', 'fonts.tar.gz'))
+  assert.ok(size > 0 && size < 25 * 1000 * 1000, '内置字体包须存在且小于项目的 25 MB 预算')
 })
 
 test('路径穿越的文件名会被拒绝', () => {

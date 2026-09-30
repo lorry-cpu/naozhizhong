@@ -1,299 +1,81 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdtemp, rm, readFile, writeFile, mkdir, access, stat } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
-import { gzipSync } from 'node:zlib'
+import { once } from 'node:events'
+import { mkdtemp, rm, readFile, cp, mkdir, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { extractFontsFromArchive } from '../src/domain/archive.ts'
+import { fontArchiveUrl } from '../src/domain/fonts.ts'
 
-/**
- * 字体必须由**同源**的本机服务提供。
- *
- * 背景：曾经让浏览器直接 fetch GitHub Releases，结果是 100% 失败——
- * github.com 的下载地址不返回 CORS 头：
- *   "Access to fetch ... has been blocked by CORS policy:
- *    No 'Access-Control-Allow-Origin' header is present"
- * 用户只会看到回退的系统字体，而且下载进度一直不动。
- *
- * 这个测试守住两件事：
- *   1. 应用请求的字体地址必须是相对路径（同源），不能是跨域绝对地址；
- *   2. 本机服务能把 dist/fonts/fonts.tar.gz 正常提供出来。
- */
 const origin = 'http://127.0.0.1:8765'
 
-async function withServer(run) {
-  const profile = await mkdtemp(path.join(tmpdir(), 'rhythm-fonts-src-'))
-  const server = spawn(process.execPath, ['launcher/serve.cjs', '--no-open'])
-  try {
-    for (let i = 0; i < 60; i++) {
-      try {
-        if ((await fetch(origin)).ok) break
-      } catch {
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-    }
-    return await run(profile)
-  } finally {
-    server.kill()
-    await rm(profile, { recursive: true, force: true })
+test('内置包包含两款真实 WOFF2 字体和版权许可，构建前后内容一致', async () => {
+  assert.equal(fontArchiveUrl(), '/fonts/fonts.tar.gz')
+  const archive = await readFile('public/fonts/fonts.tar.gz')
+  assert.ok(archive.length > 1000000 && archive.length < 25 * 1000 * 1000)
+  assert.deepEqual(await readFile('dist/fonts/fonts.tar.gz'), archive)
+  const fonts = await extractFontsFromArchive(new Uint8Array(archive), 'gzip')
+  assert.deepEqual([...fonts.keys()].sort(), ['source-han-sans', 'source-han-serif'])
+  for (const font of fonts.values()) {
+    assert.equal(new TextDecoder().decode(font.data.slice(0, 4)), 'wOF2')
+    assert.equal(font.mimeType, 'font/woff2')
   }
-}
-
-/** 造一个真实的字体包放进 dist/fonts，模拟启动器已下载完成。 */
-async function placeFontArchive(fixture) {
-  const dir = path.join(process.cwd(), 'dist', 'fonts')
-  await mkdir(dir, { recursive: true })
-  const src = await mkdtemp(path.join(tmpdir(), 'rhythm-fa-'))
-  await writeFile(path.join(src, 'source-han-sans.woff2'), fixture)
-  await writeFile(path.join(src, 'source-han-serif.woff2'), fixture)
-  const tarPath = path.join(src, 'fonts.tar')
-  execFileSync('tar', ['-cf', tarPath, '-C', src, 'source-han-sans.woff2', 'source-han-serif.woff2'], { stdio: 'pipe' })
-  const archive = gzipSync(await readFile(tarPath), { level: 6 })
-  const target = path.join(dir, 'fonts.tar.gz')
-  await writeFile(target, archive)
-  await rm(src, { recursive: true, force: true })
-  return target
-}
-
-async function loadFixture() {
-  for (const candidate of [
-    path.join(process.cwd(), 'public', 'fonts', 'source-han-sans.ttf'),
-    path.join(process.cwd(), 'dist', 'fonts', 'source-han-sans.ttf'),
-  ]) {
-    try { await access(candidate); return await readFile(candidate) } catch { /* 下一个 */ }
-  }
-  return null
-}
-
-test('字体地址必须是同源相对路径，不能跨域直连 GitHub', async () => {
-  const source = await readFile('src/domain/fonts.ts', 'utf8')
-  // fontArchiveUrl() 必须返回以 / 开头的相对路径。
-  assert.match(
-    source,
-    /return\s+`\/fonts\/\$\{FONT_ARCHIVE_NAME\}`/,
-    'fontArchiveUrl 必须返回同源相对路径，否则浏览器会因 CORS 被拦截',
-  )
-  // 上游地址只能出现在启动器里，浏览器不应请求 github.com。
-  const fn = source.slice(source.indexOf('export function fontArchiveUrl'))
-  assert.equal(
-    /https?:\/\//.test(fn.slice(0, fn.indexOf('}'))),
-    false,
-    'fontArchiveUrl 不应包含任何绝对 URL',
-  )
+  assert.match(await readFile('public/fonts/OFL.txt', 'utf8'), /SIL OPEN FONT LICENSE Version 1.1/)
+  assert.match(await readFile('public/fonts/NOTICE.txt', 'utf8'), /Adobe/)
+  assert.deepEqual((await readdir('dist/fonts')).sort(), ['NOTICE.txt', 'OFL.txt', 'fonts.tar.gz'])
 })
 
-test('应用实际请求的是同源字体路径，且本机服务能提供字体包', async () => {
-  const fixture = await loadFixture()
-  if (!fixture) {
-    console.log('跳过：本机没有可用字体夹具')
-    return
-  }
-  const archivePath = await placeFontArchive(fixture)
-  try {
-    await withServer(async profile => {
-      const context = await chromium.launchPersistentContext(profile, {
-        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        headless: true,
+for (const built of [false, true]) {
+  test(built ? '只有构建目录和启动器时字体也可离线加载' : '模拟下载 ZIP：无依赖、无构建字体缓存时可直接离线启动', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'naozhizhong-bundled-'))
+    let server, exited, browser
+    let output = ''
+    try {
+      await mkdir(path.join(dir, 'launcher'))
+      for (const name of ['serve.cjs', 'open-browser.cjs']) await cp(path.join('launcher', name), path.join(dir, 'launcher', name))
+      await cp('dist', path.join(dir, 'dist'), { recursive: true, filter: source => built || path.relative('dist', source).split(path.sep)[0] !== 'fonts' })
+      if (!built) {
+        await mkdir(path.join(dir, 'public', 'fonts'), { recursive: true })
+        for (const name of ['fonts.tar.gz', 'OFL.txt', 'NOTICE.txt']) await cp(path.join('public', 'fonts', name), path.join(dir, 'public', 'fonts', name))
+      }
+      const guard = path.resolve('tests/fixtures/no-external-network.cjs')
+      server = spawn(process.execPath, ['--require', guard, path.join(dir, 'launcher', 'serve.cjs'), '--no-open'], { cwd: dir })
+      exited = once(server, 'exit')
+      server.stdout.on('data', chunk => { output += chunk })
+      server.stderr.on('data', chunk => { output += chunk })
+      for (let i = 0; i < 60 && !output.includes('闹之钟已启动'); i++) {
+        if (server.exitCode !== null) throw new Error(output)
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      assert.match(output, /闹之钟已启动/)
+      const response = await fetch(origin + fontArchiveUrl())
+      assert.equal(response.status, 200)
+      assert.equal(response.headers.get('content-type'), 'application/gzip')
+      assert.deepEqual(Buffer.from(await response.arrayBuffer()), await readFile('public/fonts/fonts.tar.gz'))
+      assert.equal((await fetch(origin + '/fonts/OFL.txt')).status, 200)
+      assert.equal((await fetch(origin + '/fonts/unknown.txt')).status, 404)
+      browser = await chromium.launch({ executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', headless: true })
+      const page = await browser.newPage()
+      const external = []
+      await page.route('**/*', route => {
+        if (new URL(route.request().url()).origin === origin) return route.continue()
+        external.push(route.request().url())
+        return route.abort()
       })
-      try {
-        const page = context.pages()[0] || await context.newPage()
-        const fontRequests = []
-        page.on('request', request => {
-          const url = request.url()
-          if (url.includes('fonts.tar.gz')) fontRequests.push(url)
-        })
-
-        await page.goto(origin)
-        await page.getByRole('navigation').getByRole('button', { name: '数据与设置' }).click()
-        await page.getByRole('heading', { name: '数据与设置' }).waitFor()
-
-        // 先切到宋体（默认值不触发下载），再切到黑体确保一定走下载分支。
-        await page.locator('#font-choice').selectOption('source-han-sans')
-        // 等字体包请求真的发出去，而不是只等 selectOption 返回。
-        await page.waitForFunction(
-          () => performance.getEntriesByType('resource').some(e => e.name.includes('fonts.tar.gz')),
-          null,
-          { timeout: 90000 },
-        )
-
-        // 等字体真正注册进 document.fonts 并加载完成。
-        // 只等 IndexedDB 落库不够：注册发生在解压之后，可能有时间差。
-        await page.waitForFunction(async () => {
-          const faces = [...document.fonts].filter(f => f.family.startsWith('Nao'))
-          if (faces.length === 0) return false
-          const db = await new Promise(resolve => {
-            const r = indexedDB.open('personal-rhythm-v1')
-            r.onsuccess = () => resolve(r.result)
-          })
-          const rows = await new Promise(resolve => {
-            const req = db.transaction('fontBlobs').objectStore('fontBlobs').getAll()
-            req.onsuccess = () => resolve(req.result)
-            req.onerror = () => resolve([])
-          })
-          return rows.length >= 2 && rows.every(row => row.bytes > 0)
-        }, null, { timeout: 90000 })
-
-        // 关键断言 1：请求的是本机同源地址，不是 github.com
-        assert.ok(fontRequests.length > 0, '应当发起过字体包请求')
-        for (const url of fontRequests) {
-          assert.equal(
-            url.startsWith(origin),
-            true,
-            `字体包必须从本机同源地址请求，实际是 ${url}（跨域会被 CORS 拦截）`,
-          )
-        }
-
-        // 关键断言 2：字体真的注册并生效。
-        // 不用"墨迹像素数"判断：实测 sans-serif / monospace / 不存在的字体
-        // 在这个画布上都得到相同的像素数，无法区分。
-        // 改为逐像素比对两张画布的原始数据，并确认用的是已加载字体。
-        const applied = await page.evaluate(async () => {
-          const pixels = spec => {
-            const c = document.createElement('canvas')
-            c.width = 240; c.height = 70
-            const ctx = c.getContext('2d')
-            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 240, 70)
-            ctx.fillStyle = '#000'; ctx.font = spec
-            ctx.fillText('闹之钟今日', 4, 48)
-            return Array.from(ctx.getImageData(0, 0, 240, 70).data)
-          }
-          const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i])
-          const faces = () => [...document.fonts].filter(f => f.family.startsWith('Nao'))
-
-          // register() 里的 face.load() 是"发射后不管"的，注册与加载完成
-          // 可能晚于 document.fonts.ready；这里轮询直到真的生效，避免偶发失败。
-          const deadline = Date.now() + 30000
-          let differs = false
-          const withMissing = pixels('400 36px __DefinitelyNotAFont__')
-          while (Date.now() < deadline) {
-            await document.fonts.ready
-            differs = !same(pixels('400 36px NaoSourceHanSans'), withMissing)
-            if (differs) break
-            await new Promise(r => setTimeout(r, 200))
-          }
-          return {
-            faces: faces().map(f => ({ family: f.family, status: f.status })),
-            loadedFamilies: faces().filter(f => f.status === 'loaded').map(f => f.family),
-            differsFromFallback: differs,
-          }
-        })
-        const diag = await page.evaluate(async () => {
-          const db = await new Promise(resolve => {
-            const r = indexedDB.open('personal-rhythm-v1')
-            r.onsuccess = () => resolve(r.result)
-          })
-          const rows = await new Promise(resolve => {
-            const req = db.transaction('fontBlobs').objectStore('fontBlobs').getAll()
-            req.onsuccess = () => resolve(req.result.map(x => ({ id: x.id, bytes: x.bytes })))
-            req.onerror = () => resolve([])
-          })
-          return {
-            faces: [...document.fonts].map(f => ({ family: f.family, status: f.status })),
-            cached: rows,
-            dataFont: document.documentElement.dataset.font,
-          }
-        })
-        assert.ok(
-          diag.faces.length > 0,
-          `字体应已注册为 FontFace。诊断：faces=${JSON.stringify(diag.faces)} ` +
-          `cached=${JSON.stringify(diag.cached)} dataFont=${diag.dataFont} ` +
-          `字体包请求=${JSON.stringify(fontRequests)}`,
-        )
-        // 逐像素比对才是判定"字体真的生效"的依据；
-        // status 只是辅助信息（注册与加载是异步的，时序不稳定）。
-        assert.ok(
-          applied.loadedFamilies.length > 0,
-          `字体应加载完成。faces=${JSON.stringify(applied.faces)}`,
-        )
-        assert.ok(
-          applied.differsFromFallback,
-          '下载的字体与兜底字体渲染完全一致，说明字体没有真正生效',
-        )      } finally {
-        await context.close()
-      }
-    })
-  } finally {
-    await rm(archivePath, { force: true })
-  }
-})
-
-test('启动器能在本机缓存字体包，供同源请求使用', async () => {
-  // 校验 launcher/fonts.cjs 的两个关键行为：已有缓存则不重复下载；
-  // 下载失败不抛异常（应用要继续可用）。
-  const module = await import('../launcher/fonts.cjs')
-  assert.equal(typeof module.ensureFontArchive, 'function')
-
-  const dir = await mkdtemp(path.join(tmpdir(), 'rhythm-launcher-fonts-'))
-  try {
-    const dest = path.join(dir, 'fonts.tar.gz')
-    // 放一个完整大小的假缓存，确认走 "cached" 分支且不联网。
-    await writeFile(dest, Buffer.alloc(module.EXPECTED_SIZE, 1))
-    const outcome = await module.ensureFontArchive(dest, 'http://127.0.0.1:1/never', () => {})
-    assert.equal(outcome, 'cached')
-    assert.equal((await stat(dest)).size, module.EXPECTED_SIZE)
-
-    // 无效地址时返回 'failed' 而不是抛错。
-    const dest2 = path.join(dir, 'missing.tar.gz')
-    const failed = await module.ensureFontArchive(dest2, 'http://127.0.0.1:1/nope', () => {})
-    assert.equal(failed, 'failed')
-    // 不留下半截文件，否则下次会误当成缓存。
-    assert.equal(existsSync(dest2 + '.part'), false)
-  } finally {
-    await rm(dir, { recursive: true, force: true })
-  }
-})
-
-/**
- * 回归：传输中断必须能续传。
- * 曾经的情况是对端提前断开时 'finish'/'error' 都不触发，
- * 下载 Promise 永远挂住 —— 用户看到的是启动窗口卡在「下载中…」不动，
- * 而且永远不会重试。这里用一个"先给一半再断开"的本地服务器复现。
- */
-test('下载中断后能带 Range 续传并得到完整文件', async () => {
-  const module = await import('../launcher/fonts.cjs')
-  const { createServer } = await import('node:http')
-  const dir = await mkdtemp(path.join(tmpdir(), 'rhythm-resume-'))
-  const dest = path.join(dir, 'fonts.tar.gz')
-  const full = Buffer.alloc(module.EXPECTED_SIZE, 3)
-  const ranges = []
-  let call = 0
-
-  const server = createServer((req, res) => {
-    call++
-    ranges.push(req.headers.range || null)
-    if (call === 1) {
-      // 声明完整长度却只发一半就断开，模拟网络中断。
-      res.writeHead(200, { 'Content-Length': full.length })
-      res.write(full.subarray(0, Math.floor(module.EXPECTED_SIZE / 2)))
-      res.end()
-      return
+      await page.goto(origin)
+      await page.waitForFunction(() => [...document.fonts].some(face => face.family === 'NaoSourceHanSerif' && face.status === 'loaded'))
+      await page.getByRole('navigation').getByRole('button', { name: '数据与设置' }).click()
+      await page.locator('#font-choice').selectOption('source-han-sans')
+      await page.waitForFunction(() => [...document.fonts].some(face => face.family === 'NaoSourceHanSans' && face.status === 'loaded'))
+      assert.deepEqual(external, [])
+      assert.doesNotMatch(output, /正在下载|EXTERNAL_NETWORK_BLOCKED/)
+    } finally {
+      await browser?.close()
+      if (server?.exitCode === null) server.kill()
+      if (exited) await exited
+      await rm(dir, { recursive: true, force: true })
     }
-    const start = req.headers.range ? Number(req.headers.range.match(/bytes=(\d+)-/)[1]) : 0
-    const rest = full.subarray(start)
-    res.writeHead(req.headers.range ? 206 : 200, { 'Content-Length': rest.length })
-    res.end(rest)
   })
-
-  try {
-    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-    const port = server.address().port
-
-    // 加超时保护：若实现又挂住，这里会失败而不是让整个测试套件卡死。
-    const result = await Promise.race([
-      module.ensureFontArchive(dest, `http://127.0.0.1:${port}/fonts.tar.gz`, () => {}),
-      new Promise(resolve => setTimeout(() => resolve('timeout'), 60000)),
-    ])
-
-    assert.equal(result, 'downloaded', '中断后应能续传成功（若为 timeout 说明下载挂住了）')
-    assert.equal((await stat(dest)).size, module.EXPECTED_SIZE, '续传后文件应完整')
-    assert.equal(call >= 2, true, '应当发起了第二次（续传）请求')
-    assert.equal(ranges[0], null, '首次请求不应带 Range')
-    assert.match(String(ranges[1]), /^bytes=\d+-$/, '第二次请求应带 Range 头续传')
-  } finally {
-    server.close()
-    await rm(dir, { recursive: true, force: true })
-  }
-})
+}
