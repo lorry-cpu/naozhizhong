@@ -15,10 +15,10 @@ export function taskJson(data: TaskExport): string {
 const csvCell = (value: string | number | null) => `"${String(value ?? '').replaceAll('"', '""')}"`
 
 export function taskCsv(items: TaskInstance[]): string {
-  const header = ['日期', '开始时间', '内容', '预计分钟', '难度', '状态', '完成比例', '金币']
+  const header = ['日期', '开始时间', '内容', '预计分钟', '难度', '状态', '完成比例']
   const rows = items.map(item => [
     item.date, item.time, item.title, item.minutes, item.difficulty,
-    item.status, item.percentage, item.payout,
+    item.status, item.percentage,
   ])
   return '\uFEFF' + [header, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
 }

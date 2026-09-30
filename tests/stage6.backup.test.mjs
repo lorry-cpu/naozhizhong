@@ -49,6 +49,20 @@ test('首页真实摘要和完整备份；无效文件、导入故障保留旧�
     assert.match(await page.locator('#main-content').innerText(), /备份午餐[\s\S]*备份娱乐[\s\S]*2 个球/)
     await page.getByRole('navigation').getByRole('button', { name: '数据与设置' }).click()
     await page.getByText(/计划：1 条，已结算 1 条/).waitFor()
+    await page.locator('#theme-choice').selectOption('cool')
+    await page.locator('#font-choice').selectOption('source-han-sans')
+    await page.waitForFunction(async () => {
+      const db = await new Promise(resolve => { const r=indexedDB.open('personal-rhythm-v1'); r.onsuccess=()=>resolve(r.result) })
+      return await new Promise(resolve => {
+        const r = db.transaction('settings').objectStore('settings').getAll()
+        r.onsuccess = () => {
+          const settings = r.result
+          resolve(settings.some(row => row.key === 'theme' && row.value === 'cool') &&
+            settings.some(row => row.key === 'font' && row.value === 'source-han-sans'))
+        }
+        r.onerror = () => resolve(false)
+      })
+    })
     const downloadPromise = page.waitForEvent('download')
     await page.getByRole('button', { name: '导出完整备份' }).click()
     const download = await downloadPromise
@@ -91,6 +105,9 @@ test('首页真实摘要和完整备份；无效文件、导入故障保留旧�
     await page.waitForFunction(() => document.querySelector('#quick-memo')?.value === '备份可恢复')
     await page.getByText('1 / 1 项已结算').waitFor()
     assert.match(await page.locator('#main-content').innerText(), /备份午餐[\s\S]*备份娱乐[\s\S]*2 个球/)
+    await page.getByRole('navigation').getByRole('button', { name: '数据与设置' }).click()
+    assert.equal(await page.locator('#theme-choice').inputValue(), 'cool')
+    assert.equal(await page.locator('#font-choice').inputValue(), 'source-han-sans')
   } finally {
     await context?.close()
     server.kill()

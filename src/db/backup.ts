@@ -1,6 +1,6 @@
 import { all, announceChange, openDatabase, requestValue, TABLES, transactionDone } from './database'
 import type { Tables, TableName, TaskInstance } from './types'
-import { FONTS, localMidnight } from '../domain/rules'
+import { FONTS, THEMES, localMidnight } from '../domain/rules'
 import { validateBadminton, validateEntertainment, validateMeal } from '../domain/life'
 import { validateTask } from '../domain/tasks'
 
@@ -85,13 +85,12 @@ export function parseBackup(input: unknown): Backup {
       (typeof row.value === 'number' && !numeric(row.value))) throw new Error('设置记录无效')
   }
   const chosen = data.settings.find(row => row.key === 'theme')?.value
-  if (chosen && chosen !== 'warm' && data.settings.find(row => row.key === `unlocked:${chosen}`)?.value !== true) throw new Error('当前风格尚未兑换')
+  if (chosen !== undefined && (typeof chosen !== 'string' || !THEMES.some(item => item.id === chosen))) {
+    throw new Error('当前风格无效')
+  }
   const font = data.settings.find(row => row.key === 'font')?.value
   if (font && (typeof font !== 'string' || !FONTS.some(item => item.id === font))) {
     throw new Error('当前字体无效')
-  }
-  if (font && font !== 'source-han-serif' && data.settings.find(row => row.key === `unlocked:font:${font}`)?.value !== true) {
-    throw new Error('当前字体尚未购买')
   }
   return input as Backup
 }
