@@ -20,12 +20,30 @@
 
 ## 启动
 
-1. 电脑需要安装 Node.js，使用同一个浏览器配置（建议 Chrome）访问本应用。
-2. 从 GitHub 下载 ZIP 并完整解压；仓库已包含构建文件和字体包，日常启动无需安装 npm 依赖。只有修改源码或缺少 `dist/index.html` 时，才在项目根目录执行 `npm.cmd install` 和 `npm.cmd run build`。
-3. 双击 [`launcher/启动应用.cmd`](launcher/启动应用.cmd)。脚本会启动本机静态文件服务并打开浏览器。如果浏览器没有自动打开，请手动访问 **http://127.0.0.1:8765/**。
+支持 Windows、macOS 和 Linux。电脑需要安装 Node.js，使用同一个浏览器配置（建议 Chrome）访问本应用。
+
+1. 从 GitHub 下载 ZIP 并完整解压；仓库已包含构建文件和字体包，日常启动无需安装 npm 依赖。只有修改源码或缺少 `dist/index.html` 时，才在项目根目录执行 `npm install` 和 `npm run build`。
+2. 按系统双击对应的启动脚本，脚本会启动本机静态文件服务并打开浏览器：
+
+   | 系统 | 启动入口 |
+   | --- | --- |
+   | Windows | [`launcher/启动应用.cmd`](launcher/启动应用.cmd) |
+   | macOS / Linux | [`launcher/启动应用.command`](launcher/启动应用.command) |
+
+3. 如果浏览器没有自动打开，请手动访问 **http://127.0.0.1:8765/**。
 4. 运行期间保持启动窗口开启；关闭窗口或按 Ctrl+C 会停止本机服务。下次双击同一脚本即可继续使用。如果闹之钟已经在运行，脚本会直接打开页面；端口 8765 被其他程序占用时脚本会提示，请关闭占用端口的进程后重试。
 
-服务仅绑定 `127.0.0.1`，不接收应用数据。构建产物在 `dist/`，应用运行时没有 CDN、账号或外网请求，字体也从本机读取。更新源代码后再次运行 `npm.cmd run build` 才会更新浏览器中的页面。
+服务仅绑定 `127.0.0.1`，不接收应用数据。构建产物在 `dist/`，应用运行时没有 CDN、账号或外网请求，字体也从本机读取。更新源代码后再次运行 `npm run build` 才会更新浏览器中的页面。
+
+### macOS / Linux 首次使用
+
+`.command` 脚本可能需要先赋予执行权限；如果双击提示没有权限，在项目根目录执行一次：
+
+```bash
+chmod +x launcher/启动应用.command
+```
+
+macOS 若提示「无法打开，因为它来自身份不明的开发者」，请在 Finder 中右键该文件选择「打开」，确认一次后即可正常双击。用 `open`（macOS）或 `xdg-open`（Linux）打开默认浏览器；这两个命令缺失时，脚本会提示手动访问上面的地址。
 
 ## 字体
 
@@ -45,8 +63,8 @@
 
 1. 将两款有分发许可的源字体放入 `public/fonts/source-han-serif.ttf` 和 `public/fonts/source-han-sans.ttf`（源文件被 Git 忽略）。
 2. 安装带 `fontTools` 与 `brotli` 的 Python；可通过 `PYTHON` 环境变量指定解释器。
-3. 执行 `npm.cmd run fonts:pack`，生成并更新受版本控制的 `public/fonts/fonts.tar.gz`，同步检查许可文件。
-4. 执行 `npm.cmd run fonts:check`、`npm.cmd run build` 和 `npm.cmd test` 后，将字体包、许可和构建结果一起提交。
+3. 执行 `npm run fonts:pack`，生成并更新受版本控制的 `public/fonts/fonts.tar.gz`，同步检查许可文件。
+4. 执行 `npm run fonts:check`、`npm run build` 和 `npm test` 后，将字体包、许可和构建结果一起提交。
 
 构建会保留压缩包与许可，排除开发机上的未压缩字体；包内采用 WOFF2 以减少下载 ZIP 的体积。
 
@@ -88,6 +106,6 @@
 
 ## 开发验证
 
-在项目目录执行 `npm.cmd run build` 和 `npm.cmd test`。测试包括规则单元测试、实际 Chrome 浏览器中的跨零点、计时重开、离线导航、事务回滚、三类生活记录、按日期备忘、月历选日、品牌与壁纸、内置字体离线加载与缓存，以及完整备份恢复。测试使用临时浏览器配置，不会读取日常浏览器里的个人记录。
+在项目目录执行 `npm run build` 和 `npm test`。测试包括规则单元测试、实际 Chrome 浏览器中的跨零点、计时重开、离线导航、事务回滚、三类生活记录、按日期备忘、月历选日、品牌与壁纸、内置字体离线加载与缓存，以及完整备份恢复。测试使用临时浏览器配置，不会读取日常浏览器里的个人记录。
 
 另外两个文件不含正式运行代码：[`navigation-preview.html`](navigation-preview.html) 是顶部导航的静态预览页，[`DEVELOPMENT_LOG.md`](DEVELOPMENT_LOG.md) 记录各阶段的实现与验证。

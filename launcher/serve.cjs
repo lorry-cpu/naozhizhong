@@ -13,7 +13,7 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const bundledFontPaths = new Set(['/fonts/fonts.tar.gz', '/fonts/OFL.txt', '/fonts/NOTICE.txt'])
 
 if (!fs.existsSync(path.join(publicDir, 'index.html'))) {
-  console.error('未找到构建文件。请先执行 npm.cmd install 和 npm.cmd run build。')
+  console.error('未找到构建文件。请先执行 npm install 和 npm run build。')
   process.exit(1)
 }
 
@@ -58,7 +58,7 @@ server.on('error', error => {
     response.resume()
     if (response.statusCode === 200 && response.headers['x-naozhizhong-app'] === '1') {
       console.log(`闹之钟已在运行：${url}`)
-      if (!process.argv.includes('--no-open') && process.platform === 'win32') openBrowser(url)
+      if (!process.argv.includes('--no-open')) openBrowser(url)
       return
     }
     console.error(`端口 ${port} 已被其他服务占用，无法启动闹之钟。`)
@@ -72,7 +72,7 @@ server.listen(port, host, () => {
   const url = `http://${host}:${port}/`
   console.log(`闹之钟已启动：${url}`)
   console.log('请保持此窗口开启；关闭窗口会停止应用。若浏览器没有自动打开，请复制上面的地址到浏览器。')
-  if (!process.argv.includes('--no-open') && process.platform === 'win32') {
+  if (!process.argv.includes('--no-open')) {
     openBrowser(url)
   }
 })

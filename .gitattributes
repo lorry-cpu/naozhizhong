@@ -1,2 +1,7 @@
 # Use CRLF in checkouts; the launcher must also support LF in ZIP archives.
 *.cmd text eol=crlf
+
+# macOS/Linux 启动脚本必须是 LF：CRLF 会让 shebang 变成
+# "#!/bin/bash\r"，bash 会报 bad interpreter 而直接退出。
+*.command text eol=lf
+*.sh text eol=lf
