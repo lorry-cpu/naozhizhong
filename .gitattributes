@@ -1,0 +1,2 @@
+# Windows command scripts must remain executable after GitHub ZIP download.
+*.cmd text eol=crlf

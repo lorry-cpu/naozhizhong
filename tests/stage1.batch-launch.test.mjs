@@ -1,10 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 test('双击入口经 Windows 命令解释器启动后能从固定地址读取首页', { skip: process.platform !== 'win32' }, async () => {
   const cwd = fileURLToPath(new URL('..', import.meta.url))
+  const batch = await readFile(new URL('../launcher/启动应用.cmd', import.meta.url), 'utf8')
+  assert.equal(batch.split(/\r?\n/).filter(Boolean).length, 1, 'GitHub ZIP 的 LF 换行也必须能运行启动脚本')
   const child = spawn('cmd.exe', ['/d', '/c', 'launcher\\启动应用.cmd'], {
     cwd,
     env: { ...process.env, NODE_OPTIONS: '--require ./tests/fixtures/launcher-probe.cjs' },
